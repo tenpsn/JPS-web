@@ -6,6 +6,9 @@ const L = (th: string, en: string): LText => ({ th, en });
 const DICT = {
   viewAll: L("ดูสินค้าทั้งหมด", "View all products"),
   detail: L("ดูรายละเอียด", "View details"),
+  seeAll: L("ดูทั้งหมด", "View all"),
+  models: L("รุ่น", "models"),
+  noCats: L("ยังไม่มีหมวดที่มีสินค้าเผยแพร่ ส่วนนี้จะซ่อนบนเว็บจริงจนกว่าจะมีสินค้า", "No category has published products yet. This section stays hidden on the live site until one does."),
   home: L("หน้าแรก", "Home"),
   more: L("เพิ่มเติม", "More"),
   menu: L("เมนู", "Menu"),
@@ -29,8 +32,12 @@ const DICT = {
   openMap: L("เปิดแผนที่", "Open map"),
   follow: L("ติดตามเรา", "Follow us"),
   contact: L("ติดต่อเรา", "Contact"),
+  sales: L("ติดต่อฝ่ายขาย", "Contact sales"),
+  callUs: L("โทรปรึกษา", "Call us"),
+  quick: L("ติดต่อด่วน", "Quick contact"),
   p: {
     search: L("ค้นหาชื่อสินค้าหรือรหัสสินค้า", "Search by product name or SKU"),
+    searchPh: L("เช่น เครื่องตอกเม็ดยา", "e.g. Tableting Machine"),
     all: L("ทั้งหมด", "All"),
     noImg: L("ยังไม่มีรูปสินค้า", "No image yet"),
     img: L("ภาพสินค้า", "Product photo"),
@@ -47,7 +54,8 @@ const DICT = {
     count: L("รายการ", "items"),
     sku: L("รหัสสินค้า", "SKU"),
     category: L("หมวดหมู่", "Category"),
-    back: L("กลับไปหน้าสินค้า", "Back to products"),
+    specs: L("รายละเอียดและคุณสมบัติ", "Details and features"),
+    related: L("เครื่องอื่นในหมวดนี้", "More in this category"),
     products: L("สินค้า", "Products"),
   },
   c: {

@@ -6,7 +6,10 @@ const L = (th: string, en: string): LText => ({ th, en });
 
 /** ข้อความที่เพิ่มหรือแก้ทับจากข้อความในไฟล์ดีไซน์ */
 const EXTRA = {
-  nav: { design: L("ธีมและตัวอักษร", "Theme & type"), activity: L("ประวัติการแก้ไข", "Activity log"), viewSite: L("ดูหน้าเว็บไซต์", "View website") },
+  nav: {
+    design: L("ธีมและตัวอักษร", "Theme & type"), activity: L("ประวัติการแก้ไข", "Activity log"), viewSite: L("ดูหน้าเว็บไซต์", "View website"),
+    gOverview: L("ภาพรวม", "Overview"), gContent: L("เนื้อหา", "Content"), gSystem: L("ระบบ", "System"),
+  },
   top: { language: L("ภาษา", "Language") },
   login: {
     errCred: L("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password"),
@@ -16,13 +19,39 @@ const EXTRA = {
   },
   dash: {
     hello: L("สวัสดี คุณ ", "Hello, "), latest: L("ล่าสุด", "Latest"),
+    sPub: L("เผยแพร่แล้ว", "Published"), sDraft: L("ฉบับร่าง", "Drafts"), sPages: L("หน้าเว็บ", "Pages"),
+    todo: L("งานที่ควรทำ", "To do"),
+    tDraft: L("สินค้าฉบับร่าง {n} รายการ", "{n} draft products"), tDraftD: L("ตรวจแล้วเผยแพร่เพื่อให้ขึ้นบนเว็บ", "Review and publish them to show on the website"),
+    tNoImg: L("สินค้าที่ยังไม่มีรูป {n} รายการ", "{n} products without a photo"), tNoImgD: L("ใส่รูปเครื่องเพื่อให้การ์ดสินค้าดูครบ", "Add a machine photo so the product card looks complete"),
+    tNoShort: L("สินค้าที่ยังไม่มีคำอธิบายสั้น {n} รายการ", "{n} products without a short description"), tNoShortD: L("คำอธิบายสั้นขึ้นบนการ์ดและในผลค้นหา Google", "It shows on product cards and in Google results"),
+    tHero: L("สไลด์หน้าแรกที่ยังไม่มีรูป {n} สไลด์", "{n} homepage slides without a photo"), tHeroD: L("สไลด์ที่ใช้รูปตัวอย่างอยู่", "These slides still use the sample image"),
+    tSample: L("หน้าที่ยังมีข้อความตัวอย่าง {n} หน้า", "{n} pages still have sample text"),
+    tPhone: L("เบอร์โทรยังเป็นเบอร์ตัวอย่าง", "The phone number is still the sample one"),
+    tPhoneD: L("{phone} ขึ้นบนปุ่มโทรทุกหน้า แก้ได้ที่ข้อมูลติดต่อ", "{phone} shows on the call button on every page. Edit it in Contact details"),
+    tPageDraft: L("มีฉบับร่างหน้าเว็บที่ยังไม่เผยแพร่", "Unpublished page changes"),
+    tPageDraftD: L("แก้ล่าสุดโดย {who} · {when}", "Last edited by {who} · {when}"),
+    tSeo: L("SEO ทั้งเว็บยังไม่ถูกต้อง", "Site SEO needs attention"),
+    tSeoD: L("ชื่อหรือคำอธิบายที่ขึ้นใน Google ยังเป็นข้อความตัวอย่าง ว่างอยู่ หรือไม่ตรงกับชื่อเว็บ", "The Google title or description is still sample text, empty, or does not match the site name"),
+    tPartial: L("สินค้าที่ข้อมูลยังไม่ครบสองภาษา {n} รายการ", "{n} products are missing details or English text"),
+    tPartialD: L("ขาดรายละเอียด หรือขาดชื่อหรือคำอธิบายภาษาอังกฤษ หน้าภาษาอังกฤษจะว่าง", "Missing details, or the English name or description, so the English page looks empty"),
+    tEmptyCat: L("หมวดที่ยังไม่มีสินค้าเผยแพร่ {n} หมวด", "{n} categories have no published products"),
+    tEmptyCatD: L("{names} จะไม่ขึ้นบนเว็บจนกว่าจะมีสินค้า", "{names} will not show on the website until they have products"),
+    tInvited: L("ผู้ใช้ที่ยังไม่ตอบรับคำเชิญ {n} คน", "{n} invited users have not joined yet"),
+    tInvitedD: L("สร้างลิงก์เชิญใหม่ได้ที่หน้าจัดการผู้ใช้", "Create a new invite link on the Users page"),
+    allDone: L("ไม่มีงานค้าง", "All caught up"), allDoneD: L("สินค้าและหน้าเว็บข้อมูลครบแล้ว", "Products and pages are complete"),
+    ctaT: L("ตรวจหน้าเว็บก่อนเผยแพร่ทุกครั้ง", "Check the website before you publish"),
+    ctaD: L("แก้ล่าสุด {page} โดย {who} · {when}", "Last edit: {page} by {who} · {when}"),
     denied: L("บัญชีของคุณไม่มีสิทธิ์เข้าส่วนนั้น", "Your account doesn't have access to that area"),
   },
   roles: {
     super: L("ผู้ดูแลสูงสุด", "Super admin"), editor: L("แก้ไขเนื้อหา", "Content editor"),
     products: L("จัดการสินค้า", "Product manager"), viewer: L("ดูอย่างเดียว", "View only"),
   },
-  set: { t_security: L("รหัสผ่าน", "Password") },
+  c: { saving: L("กำลังบันทึก", "Saving") },
+  set: {
+    t_security: L("รหัสผ่าน", "Password"),
+    errCurWrong: L("รหัสผ่านปัจจุบันไม่ถูกต้อง", "Current password is incorrect"),
+  },
   dz: {
     radius: L("มุมโค้งการ์ดและกล่อง", "Card and box corners"),
     btnRadius: L("มุมโค้งปุ่ม", "Button corners"),
@@ -35,7 +64,20 @@ const EXTRA = {
     first: L("หน้าแรก", "First"), prev: L("ก่อนหน้า", "Previous"), next: L("ถัดไป", "Next"), last: L("หน้าสุดท้าย", "Last"),
     showing: L("แสดง {from} ถึง {to} จาก {total} รายการ", "Showing {from} to {to} of {total}"),
   },
+  prod: {
+    sub: L("{n} รายการ · เผยแพร่ {p} · ฉบับร่าง {d}", "{n} items · {p} published · {d} drafts"),
+    filters: L("ตัวกรอง", "Filters"),
+    bulkPub: L("เผยแพร่", "Publish"), bulkDraft: L("เป็นฉบับร่าง", "Make draft"), bulkMove: L("ย้ายหมวด", "Move to"),
+    pubDone: L("เปลี่ยนสถานะแล้ว {n} รายการ", "Status changed for {n} items"),
+    skipped: L("อีก {n} รายการข้อมูลยังไม่ครบ จึงยังไม่เผยแพร่", "{n} more are incomplete and were not published"),
+    moved: L("ย้ายหมวดแล้ว {n} รายการ", "Moved {n} items"),
+  },
   users: {
+    sumAll: L("ผู้ใช้ทั้งหมด", "All users"),
+    revert: L("ยกเลิกการแก้ไข", "Discard changes"),
+    // ระบบไม่ได้ส่งอีเมล จึงบอกตามจริงว่าจะได้ลิงก์เชิญให้คัดลอกไปส่งเอง
+    invite: L("บันทึกแล้วจะได้ลิงก์เชิญ คัดลอกไปส่งให้ผู้ใช้เพื่อตั้งรหัสผ่านเอง", "After saving you get an invite link. Copy it to the user so they can set their own password"),
+    resend: L("สร้างลิงก์เชิญใหม่", "New invite link"),
     editorD: L("แก้ไขสินค้าและเนื้อหาหน้าเว็บ", "Edit products and pages"),
     productsD: L("เพิ่ม แก้ไข และเผยแพร่สินค้า", "Add, edit and publish products"),
     added: L("เพิ่มผู้ดูแลแล้ว", "Admin added"), superOnly: L("เฉพาะผู้ดูแลสูงสุด", "Super admin only"), linkReady: L("สร้างลิงก์เชิญใหม่แล้ว", "New invite link created"),

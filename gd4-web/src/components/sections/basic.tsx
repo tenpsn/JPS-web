@@ -8,9 +8,11 @@ import type {
   CardsSection,
   CtaSection,
   GallerySection,
+  IconName,
   Locale,
   LogosSection,
   PageHeaderSection,
+  SiteSettings,
   StatsSection,
   StepsSection,
   TableSection,
@@ -18,27 +20,80 @@ import type {
   TextSection,
   TimelineSection,
 } from "@/types/site";
+import { CatalogSearch } from "./CatalogSearch";
 import { CountUp } from "./CountUp";
-import { btn, delay, H2, ink2 } from "./shared";
+import { btn, cardCls, chipCls, delay, H2, ink2, PageIntro, plateCls, telHref } from "./shared";
 
 type P<S> = { s: S; lang: Locale; dark: boolean };
 
-export function PageHeader({ s, lang, crumb }: P<PageHeaderSection> & { crumb: string }) {
+export function PageHeader({ s, lang, crumb, settings, search }: P<PageHeaderSection> & { crumb: string; settings: SiteSettings; search?: boolean }) {
   const t = getDict(lang);
+  const heading = tx(s.heading, lang);
+  const aside =
+    s.side === "contact" ? (
+      <QuickContact settings={settings} lang={lang} />
+    ) : s.side === "image" && s.img ? (
+      // รูปวางบนการ์ดขาวแบบเดียวกับฮีโร่หน้าแรก
+      <div className={`${plateCls} aspect-[16/11]`}>
+        <div className="absolute inset-5 sm:inset-7">
+          <Media img={s.img} alt={heading} fit="contain" priority sizes="(min-width: 1024px) 50vw, 100vw" />
+        </div>
+      </div>
+    ) : null;
   return (
-    <div className="relative mx-auto flex max-w-[1200px] flex-col gap-3.5 px-[var(--sec-px)] py-[calc(var(--sec-py)*.7)]">
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-small text-on-dark">
-        <LocalLink href="/" className="text-on-dark hover:text-white">
-          {t.home}
-        </LocalLink>
-        <Icon name="chevR" />
-        <span className="text-white" aria-current="page">
-          {crumb}
+    <PageIntro crumbs={[{ label: t.home, href: "/" }, { label: crumb }]} heading={heading} sub={tx(s.sub, lang)} aside={aside}>
+      {search && (
+        <div className="pt-1.5">
+          <CatalogSearch />
+        </div>
+      )}
+    </PageIntro>
+  );
+}
+
+/** การ์ดติดต่อด่วน ใช้เบอร์โทร เวลาทำการ และ LINE จากหน้าตั้งค่า */
+function QuickContact({ settings, lang }: { settings: SiteSettings; lang: Locale }) {
+  const t = getDict(lang);
+  const c = settings.contact;
+  const hours = tx(c.hours, lang);
+  const line = settings.socials.find((x) => x.platform === "line");
+  return (
+    <div className="flex min-w-0 flex-col gap-3.5 rounded-card border border-line bg-card p-[clamp(20px,3vw,28px)] shadow-card">
+      <span className={`${chipCls} bg-accent/10 text-accent`}>
+        <Icon name="clock" size={14} />
+        {t.quick}
+      </span>
+      <a href={telHref(c.phone)} className="w-fit font-head text-[clamp(28px,3.2vw,36px)] font-bold leading-[1.1] text-accent hover:text-accent">
+        {c.phone}
+      </a>
+      {hours && (
+        <span className="flex items-start gap-2.5 text-ink2">
+          <Icon name="clock" />
+          {hours}
         </span>
-      </nav>
-      <h1 className="m-0 max-w-[820px] font-head text-h1 font-bold leading-[1.25] text-balance">{tx(s.heading, lang)}</h1>
-      {tx(s.sub, lang) && <p className="m-0 max-w-[720px] text-body text-pretty text-on-dark">{tx(s.sub, lang)}</p>}
-      <span className="h-1 w-14 rounded-sm bg-accent-solid" />
+      )}
+      {c.email && (
+        <a href={`mailto:${c.email}`} className="flex w-fit items-center gap-2.5 text-ink2 [overflow-wrap:anywhere] hover:text-primary">
+          <Icon name="mail" />
+          {c.email}
+        </a>
+      )}
+      <div className="flex flex-wrap gap-3 pt-1">
+        <a href={telHref(c.phone)} className={`${btn.accent} min-h-12 flex-1 justify-center`}>
+          <Icon name="phone" />
+          {t.callUs}
+        </a>
+        {line && (
+          <a
+            href={line.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-btn bg-[#06c755] px-[22px] text-btn font-semibold text-white hover:text-white hover:brightness-105"
+          >
+            LINE
+          </a>
+        )}
+      </div>
     </div>
   );
 }
@@ -54,22 +109,58 @@ export function Text({ s, lang, dark }: P<TextSection>) {
   );
 }
 
+/** แยกเนื้อหาเป็นย่อหน้ากับรายการ บรรทัดที่ขึ้นต้นด้วยขีดหรือจุดจะแสดงเป็นรายการมีเครื่องหมายถูก */
+function splitBody(body: string) {
+  const paras: string[] = [];
+  const points: string[] = [];
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^[-•*]\s*(.+)$/);
+    if (m) points.push(m[1]);
+    else paras.push(line);
+  }
+  return { paras, points };
+}
+
 export function TextImage({ s, lang, dark }: P<TextImageSection>) {
   const label = tx(s.btnLabel, lang);
+  const { paras, points } = splitBody(tx(s.body, lang));
+  const right = s.imgSide === "right";
   return (
-    <div className="sec grid grid-cols-1 items-center gap-[clamp(28px,5vw,64px)] lg:grid-cols-2">
-      <div className="order-1 flex min-w-0 flex-col gap-[18px]">
+    <div className="sec grid grid-cols-1 items-center gap-[clamp(40px,6vw,64px)] lg:grid-cols-2">
+      <div className={`flex min-w-0 flex-col gap-4 ${right ? "lg:order-1" : "lg:order-2"}`}>
         <H2>{tx(s.heading, lang)}</H2>
-        <p className={`m-0 text-body leading-[1.85] text-pretty ${ink2(dark)}`}>{tx(s.body, lang)}</p>
+        {paras.map((p, i) => (
+          <p key={i} className={`m-0 text-body leading-[1.85] text-pretty ${ink2(dark)}`}>
+            {p}
+          </p>
+        ))}
+        {points.length > 0 && (
+          <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+            {points.map((p, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="mt-1 grid size-[22px] flex-none place-items-center rounded-full bg-primary-solid text-white">
+                  <Icon name="check" size={14} />
+                </span>
+                <span className="leading-[1.7]">{p}</span>
+              </li>
+            ))}
+          </ul>
+        )}
         {label && s.btnUrl && (
-          <LocalLink href={s.btnUrl} className={btn.primary}>
+          <LocalLink href={s.btnUrl} className={`${btn.primary} min-h-12`}>
             {label}
             <Icon name="arrowR" />
           </LocalLink>
         )}
       </div>
-      <div className={`relative aspect-[4/3] overflow-hidden rounded-img ${s.imgSide === "right" ? "order-0 lg:order-2" : "order-0"}`}>
-        <Media img={s.img} alt={tx(s.heading, lang)} />
+      {/* รูปมีกรอบเส้นแดงเยื้องอยู่ด้านหลัง */}
+      <div className={`relative ${right ? "lg:order-2" : "lg:order-1"}`}>
+        <span aria-hidden="true" className="absolute inset-[18px_-18px_-18px_18px] rounded-[20px] border-2 border-accent-solid/35 max-sm:inset-[12px_-10px_-12px_10px]" />
+        <div className={`${plateCls} aspect-[4/3]`}>
+          <Media img={s.img} alt={tx(s.heading, lang)} />
+        </div>
       </div>
     </div>
   );
@@ -85,17 +176,12 @@ export function Cards({ s, lang, dark }: P<CardsSection>) {
       </div>
       <div className={`grid w-full gap-[18px] ${gridCols(s.items.length, { cols: s.cols })} ${gridMax(s.items.length)}`}>
         {s.items.map((c, i) => (
-          <article
-            key={c.id}
-            style={delay(i)}
-            className="anim-up flex h-full min-w-0 flex-col gap-3.5 rounded-card border border-line bg-card p-[26px] text-ink transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-1 hover:shadow-card"
-          >
-            <span className="grid size-12 flex-none place-items-center rounded-xl bg-soft text-primary">
-              <Icon name={c.icon} size={22} />
+          <article key={c.id} style={delay(i)} className={`${cardCls} gap-3.5 p-[26px]`}>
+            {/* ไอคอนสลับสีน้ำเงินกับแดงทีละใบ */}
+            <span className={`grid size-[52px] flex-none place-items-center rounded-xl ${i % 2 ? "bg-accent/10 text-accent" : "bg-soft text-primary"}`}>
+              <Icon name={c.icon} size={24} />
             </span>
-            <h3 className="clamp-2 m-0 pb-[.06em] font-head text-h3 font-semibold leading-normal [overflow-wrap:anywhere]">
-              {tx(c.title, lang)}
-            </h3>
+            <h3 className="clamp-2 m-0 pb-[.06em] font-head text-h3 font-semibold leading-normal [overflow-wrap:anywhere]">{tx(c.title, lang)}</h3>
             <p className="clamp-4 m-0 text-[calc(var(--fs-body)*.92)] leading-[1.7] text-ink2">{tx(c.desc, lang)}</p>
           </article>
         ))}
@@ -104,21 +190,37 @@ export function Cards({ s, lang, dark }: P<CardsSection>) {
   );
 }
 
-export function Stats({ s, lang }: P<StatsSection>) {
+export function Stats({ s, lang, dark }: P<StatsSection>) {
+  const heading = tx(s.heading, lang);
+  // บนพื้นกรมท่าเป็นแถบตัวเลขมีเส้นแดง บนพื้นสว่างเป็นการ์ดแถวเดียวแบ่งช่องด้วยเส้น
+  if (!dark) {
+    return (
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-7 px-[var(--sec-px)] py-[calc(var(--sec-py)*.5)]">
+        {heading && <H2 className="text-[calc(var(--fs-h2)*.8)]">{heading}</H2>}
+        <div className={`grid overflow-hidden rounded-[16px] border border-line bg-card shadow-card ${gridCols(s.items.length, { m: 2 })}`}>
+          {s.items.map((c, i) => (
+            <div key={c.id} style={delay(i)} className="anim-up flex min-w-0 flex-col gap-1 border-l border-t border-line px-6 py-[22px] [margin:-1px_0_0_-1px]">
+              <span className="whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.05)] font-bold leading-[1.15] text-primary tabular-nums">
+                <CountUp value={tx(c.value, lang)} />
+              </span>
+              <span className="text-[calc(var(--fs-body)*.88)] leading-normal text-balance text-ink2">{tx(c.label, lang)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="sec flex flex-col items-center gap-9">
-      <H2 className="text-center">{tx(s.heading, lang)}</H2>
-      <div className={`grid w-full gap-4 ${gridCols(s.items.length, { m: 2 })} ${gridMax(s.items.length)}`}>
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-[var(--sec-px)] py-[calc(var(--sec-py)*.65)]">
+      {/* เว้นหัวข้อว่างไว้ได้ ถ้าอยากให้เหลือแค่แถบตัวเลข */}
+      {heading && <H2 className="text-[calc(var(--fs-h2)*.8)]">{heading}</H2>}
+      <div className={`grid w-full gap-x-6 gap-y-8 ${gridCols(s.items.length, { m: 2 })}`}>
         {s.items.map((c, i) => (
-          <div
-            key={c.id}
-            style={delay(i)}
-            className="anim-up flex h-full flex-col items-center justify-center gap-1.5 rounded-card bg-card px-3.5 py-6 text-center"
-          >
-            <span className="whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.35)] font-bold leading-[1.1] text-primary tabular-nums">
+          <div key={c.id} style={delay(i)} className="anim-up flex min-w-0 flex-col gap-1 border-l-[3px] border-accent-solid pl-[18px]">
+            <span className="whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.3)] font-bold leading-[1.15] text-white tabular-nums">
               <CountUp value={tx(c.value, lang)} />
             </span>
-            <span className="text-small leading-normal text-balance text-ink2">{tx(c.label, lang)}</span>
+            <span className={`text-[calc(var(--fs-body)*.9)] leading-normal text-balance ${ink2(dark)}`}>{tx(c.label, lang)}</span>
           </div>
         ))}
       </div>
@@ -169,83 +271,76 @@ export function Logos({ s, lang }: P<LogosSection>) {
 }
 
 export function Timeline({ s, lang }: P<TimelineSection>) {
-  const dot = "absolute size-3.5 rounded-full bg-accent-solid shadow-[0_0_0_4px_var(--c-bg2)]";
+  const last = s.items.length - 1;
   return (
-    <div className="sec flex flex-col gap-9">
+    <div className="sec flex flex-col gap-10">
       <H2>{tx(s.heading, lang)}</H2>
-      {/* แท็บเล็ตและคอมพิวเตอร์ แสดงเป็นแนวนอน */}
-      <ol className={`m-0 hidden list-none gap-x-5 gap-y-7 p-0 sm:grid ${gridCols(s.items.length)}`}>
-        {s.items.map((c, i) => (
-          <li key={c.id} style={delay(i)} className="anim-up relative flex flex-col gap-2 border-t-2 border-line pt-[22px]">
-            <span className={`${dot} -top-2 left-0`} />
-            <span className="font-mono text-[calc(var(--fs-h3)*1.2)] font-semibold text-primary">{c.year}</span>
-            <span className="text-[calc(var(--fs-body)*.94)] leading-[1.6] text-ink2">{tx(c.event, lang)}</span>
-          </li>
-        ))}
-      </ol>
-      {/* มือถือ แสดงเป็นแนวตั้ง */}
-      <ol className="m-0 ml-[7px] flex list-none flex-col border-l-2 border-line p-0 sm:hidden">
-        {s.items.map((c, i) => (
-          <li key={c.id} style={delay(i)} className="anim-up relative flex flex-col gap-1 pb-[26px] pl-6">
-            <span className={`${dot} -left-2 top-1.5`} />
-            <span className="font-mono text-lg font-semibold text-primary">{c.year}</span>
-            <span className="text-body text-ink2">{tx(c.event, lang)}</span>
-          </li>
-        ))}
+      {/* เส้นเวลาแนวนอนบนจอกว้าง แนวตั้งบนมือถือ เหตุการณ์ล่าสุดเป็นสีแดง */}
+      <ol
+        className={`relative m-0 grid list-none gap-x-5 gap-y-7 p-0 pl-8 before:absolute before:bottom-0 before:left-2 before:top-0 before:w-0.5 before:bg-line sm:pl-0 sm:pt-[30px] sm:before:inset-x-0 sm:before:bottom-auto sm:before:top-[9px] sm:before:h-0.5 sm:before:w-auto ${gridCols(s.items.length, { m: 1 })}`}
+      >
+        {s.items.map((c, i) => {
+          const now = i === last;
+          return (
+            <li key={c.id} style={delay(i)} className="anim-up relative flex flex-col gap-1.5">
+              <span
+                aria-hidden="true"
+                className={`absolute -left-8 top-2.5 size-[18px] rounded-full border-4 bg-bg sm:-top-[30px] sm:left-0 ${
+                  now ? "border-accent-solid shadow-[0_0_0_6px_color-mix(in_srgb,var(--c-accent-solid)_18%,transparent)]" : "border-primary-solid"
+                }`}
+              />
+              <span className={`font-mono text-[calc(var(--fs-h3)*1.35)] font-semibold ${now ? "text-accent" : "text-primary"}`}>{c.year}</span>
+              <span className="text-[calc(var(--fs-body)*.95)] leading-[1.6] text-ink2">{tx(c.event, lang)}</span>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
 }
 
 export function Gallery({ s, lang }: P<GallerySection>) {
+  // มี 4 รูปพอดี จัดเป็นเบนโต รูปแรกใหญ่ รูปสุดท้ายกว้าง ถ้าจำนวนอื่นเป็นตารางปกติ
+  const bento = s.items.length === 4;
+  const span = (i: number) => (!bento ? "aspect-[4/3]" : i === 0 ? "col-span-2 aspect-[4/3] lg:col-span-1 lg:row-span-2 lg:aspect-auto" : i === 3 ? "col-span-2 aspect-[2/1] lg:aspect-auto" : "aspect-[4/3] lg:aspect-auto");
   return (
     <div className="sec flex flex-col gap-8">
       <H2>{tx(s.heading, lang)}</H2>
-      <div className={`grid gap-4 ${gridCols(s.items.length)} ${gridMax(s.items.length)}`}>
-        {s.items.map((c, i) => (
-          <figure key={c.id} style={delay(i)} className="anim-up m-0 flex min-w-0 flex-col gap-2.5">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-img transition-transform duration-500 ease-[cubic-bezier(.2,.7,.2,1)] hover:scale-[1.02]">
-              <Media img={c.img} alt={tx(c.caption, lang)} label={false} sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw" />
-            </div>
-            <figcaption className="clamp-2 text-small leading-normal text-ink2">{tx(c.caption, lang)}</figcaption>
-          </figure>
-        ))}
+      <div className={bento ? "grid grid-cols-2 gap-4 lg:grid-cols-[2fr_1fr_1fr] lg:grid-rows-[220px_220px]" : `grid gap-4 ${gridCols(s.items.length)} ${gridMax(s.items.length)}`}>
+        {s.items.map((c, i) => {
+          const cap = tx(c.caption, lang);
+          return (
+            <figure key={c.id} style={delay(i)} className={`anim-up relative m-0 min-w-0 overflow-hidden rounded-[16px] border border-line bg-bg2 ${span(i)}`}>
+              <Media img={c.img} alt={cap} label={false} sizes="(min-width: 1024px) 40vw, 50vw" />
+              {cap && (
+                <figcaption className="absolute bottom-3 left-3 right-3 w-fit max-w-[calc(100%-24px)] rounded-full bg-[rgba(10,31,68,.85)] px-3 py-1.5 text-[14px] leading-snug text-white">
+                  {cap}
+                </figcaption>
+              )}
+            </figure>
+          );
+        })}
       </div>
     </div>
   );
 }
 
+/** แถบสิทธิประโยชน์ ไอคอนเลือกได้ทีละรายการ รายการที่ยังไม่ได้เลือกใช้ไอคอนตามลำดับนี้ */
+const PERK_ICONS: IconName[] = ["factory", "users", "shield", "wrench", "clock", "check"];
 export function Table({ s, lang }: P<TableSection>) {
   return (
-    <div className="sec flex flex-col gap-7">
+    <div className="sec flex flex-col gap-8">
       <H2>{tx(s.heading, lang)}</H2>
-      <table className="hidden w-full border-separate border-spacing-0 overflow-hidden rounded-card border border-line bg-card text-body sm:table">
-        <thead>
-          <tr className="bg-primary-solid text-left text-white">
-            <th scope="col" className="w-[34%] px-5 py-3.5 font-semibold">
-              {tx(s.h1, lang)}
-            </th>
-            <th scope="col" className="px-5 py-3.5 font-semibold">
-              {tx(s.h2, lang)}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {s.items.map((r) => (
-            <tr key={r.id}>
-              <th scope="row" className="border-t border-line px-5 py-3.5 text-left align-top font-semibold">
-                {tx(r.c1, lang)}
-              </th>
-              <td className="border-t border-line px-5 py-3.5 text-ink2">{tx(r.c2, lang)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <dl className="m-0 flex flex-col gap-2.5 sm:hidden">
-        {s.items.map((r) => (
-          <div key={r.id} className="flex flex-col gap-1 rounded-card border border-line bg-card px-4 py-3.5">
-            <dt className="text-[15px] font-bold">{tx(r.c1, lang)}</dt>
-            <dd className="m-0 text-[14.5px] text-ink2">{tx(r.c2, lang)}</dd>
+      <dl className={`m-0 grid overflow-hidden rounded-[16px] border border-line bg-card ${gridCols(s.items.length, { t: 2 })}`}>
+        {s.items.map((r, i) => (
+          <div key={r.id} style={delay(i)} className="anim-up flex min-w-0 gap-3.5 border-l border-t border-line p-[22px] [margin:-1px_0_0_-1px]">
+            <span className={`grid size-[52px] flex-none place-items-center rounded-xl ${i % 2 ? "bg-accent/10 text-accent" : "bg-soft text-primary"}`}>
+              <Icon name={r.icon ?? PERK_ICONS[i % PERK_ICONS.length]} size={24} />
+            </span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <dt className="font-semibold [overflow-wrap:anywhere]">{tx(r.c1, lang)}</dt>
+              <dd className="m-0 text-[calc(var(--fs-body)*.88)] text-ink2">{tx(r.c2, lang)}</dd>
+            </span>
           </div>
         ))}
       </dl>
@@ -256,40 +351,60 @@ export function Table({ s, lang }: P<TableSection>) {
 export function Cta({ s, lang, dark }: P<CtaSection>) {
   const b1 = tx(s.btnLabel, lang);
   const b2 = tx(s.btn2Label, lang);
+  const sub = tx(s.sub, lang);
+  const tel = (u: string) => (u.startsWith("tel:") ? <Icon name="phone" /> : null);
   return (
-    <div className="relative mx-auto grid max-w-[1200px] grid-cols-1 items-center gap-7 px-[var(--sec-px)] py-[calc(var(--sec-py)*.8)] lg:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="flex flex-col gap-2.5 border-l-[5px] border-accent-solid pl-[22px]">
-        <H2>{tx(s.heading, lang)}</H2>
-        <p className={`m-0 text-body ${ink2(dark)}`}>{tx(s.sub, lang)}</p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        {b1 && s.btnUrl && (
-          <LocalLink href={s.btnUrl} className={`${btn.accent} px-6 py-[15px]`}>
-            {b1}
-          </LocalLink>
-        )}
-        {b2 && s.btn2Url && (
-          <LocalLink href={s.btn2Url} className={dark ? btn.outlineLight : btn.outline}>
-            {b2}
-          </LocalLink>
-        )}
+    <div className={`mx-auto max-w-[1200px] px-[var(--sec-px)] ${dark ? "py-[calc(var(--sec-py)*.8)]" : "py-[calc(var(--sec-py)*.6)]"}`}>
+      {/* กล่องสีน้ำเงินมีวงแหวนสีแดงที่มุม ล้อกับวงกลมในโลโก้ บนพื้นกรมท่าใช้กล่องโปร่งมีเส้นขอบแทน จะได้ไม่กลืนกัน */}
+      <div
+        className={`relative grid grid-cols-1 items-center gap-7 overflow-hidden rounded-[20px] p-[clamp(28px,5vw,48px)] text-white [--c-heading:#fff] lg:grid-cols-[minmax(0,1fr)_auto] ${
+          dark ? "border border-white/20 bg-white/5" : "bg-[linear-gradient(120deg,var(--c-panel),var(--c-primary-solid)_60%,var(--c-panel))]"
+        }`}
+      >
+        <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 size-60 rounded-full border-[28px] border-accent-solid/35" />
+        <div className="relative flex flex-col gap-2">
+          <H2>{tx(s.heading, lang)}</H2>
+          {sub && <p className="m-0 text-body text-on-dark">{sub}</p>}
+        </div>
+        <div className="relative flex flex-wrap gap-3">
+          {b1 && s.btnUrl && (
+            <LocalLink href={s.btnUrl} className={`${btn.accent} min-h-12 px-6`}>
+              {tel(s.btnUrl)}
+              {b1}
+            </LocalLink>
+          )}
+          {b2 && s.btn2Url && (
+            <LocalLink href={s.btn2Url} className={`${btn.outlineLight} min-h-12 gap-2`}>
+              {tel(s.btn2Url)}
+              {b2}
+            </LocalLink>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 export function Steps({ s, lang }: P<StepsSection>) {
+  const last = s.items.length - 1;
   return (
-    <div className="sec flex flex-col gap-9">
+    <div className="sec flex flex-col gap-10">
       <H2>{tx(s.heading, lang)}</H2>
-      <ol className={`m-0 grid list-none gap-[18px] p-0 ${gridCols(s.items.length)} ${gridMax(s.items.length)}`}>
+      {/* เลขขั้นตอนอยู่บนขอบการ์ด มีเส้นเชื่อมระหว่างการ์ดบนจอกว้าง ขั้นสุดท้ายเป็นสีแดง */}
+      <ol className={`m-0 grid list-none gap-x-5 gap-y-10 p-0 pt-4 ${gridCols(s.items.length)} ${gridMax(s.items.length)}`}>
         {s.items.map((c, i) => (
           <li
             key={c.id}
             style={delay(i)}
-            className="anim-up relative flex h-full min-w-0 flex-col gap-3 rounded-card border border-line bg-card p-6 text-ink"
+            className={`anim-up relative flex h-full min-w-0 flex-col gap-2.5 rounded-card border border-line bg-card px-[22px] pb-[22px] pt-[30px] text-ink ${
+              i < last ? "lg:after:absolute lg:after:-right-[21px] lg:after:top-1/2 lg:after:h-0.5 lg:after:w-5 lg:after:bg-line" : ""
+            }`}
           >
-            <span className="grid size-11 place-items-center rounded-full bg-primary-solid font-mono text-[15px] font-semibold text-white">
+            <span
+              className={`absolute -top-[17px] left-[22px] grid size-[34px] place-items-center rounded-full font-mono text-[14px] font-semibold text-white shadow-[0_0_0_5px_var(--c-bg)] ${
+                i === last ? "bg-accent-solid" : "bg-primary-solid"
+              }`}
+            >
               {String(i + 1).padStart(2, "0")}
             </span>
             <h3 className="m-0 font-head text-h3 font-semibold leading-[1.4] [overflow-wrap:anywhere]">{tx(c.title, lang)}</h3>

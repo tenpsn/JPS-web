@@ -30,6 +30,8 @@ const IC: Record<IconName, string> = {
   minus: "M5 12h14",
   home: "M3 11l9-8 9 8|M5 10v10h14V10",
   noimg: "M3 3l18 18|M21 15V3H9|M3 7v14h14|M8.5 10.5l-5.5 6.5",
+  wrench: "M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z",
+  factory: "M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z|M17 18h1|M12 18h1|M7 18h1",
 };
 
 export function Icon({ name, size = 20, stroke = 1.8, className }: { name: IconName; size?: number; stroke?: number; className?: string }) {

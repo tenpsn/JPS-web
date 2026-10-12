@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import { LocalLink } from "@/components/LocalLink";
 import { tx } from "@/i18n/config";
 import { getDict } from "@/i18n/dictionary";
@@ -10,7 +11,7 @@ export function Footer({ settings, lang }: { settings: SiteSettings; lang: Local
   const dark = settings.logoDark && settings.logoDark !== "placeholder" ? settings.logoDark : null;
   const footLogo = dark ?? (settings.logo && settings.logo !== "placeholder" ? settings.logo : null);
   return (
-    <footer className="bg-footer text-small text-footer-ink">
+    <footer className="border-t-[3px] border-accent-solid bg-footer text-small text-footer-ink">
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-8 px-[var(--sec-px)] pb-7 pt-[calc(var(--sec-py)*.7)] sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
         <div className="flex max-w-[360px] flex-col gap-3.5">
           <span className="flex items-center gap-2.5">
@@ -37,11 +38,16 @@ export function Footer({ settings, lang }: { settings: SiteSettings; lang: Local
 
         <div className="flex flex-col gap-2.5">
           <strong className="text-[15px] text-white">{t.contact}</strong>
-          <span className="leading-[1.6]">{tx(contact.address, lang)}</span>
-          <a href={`tel:${contact.phone.replace(/\D/g, "")}`} className="text-footer-ink hover:text-white">
+          <span className="flex gap-2 leading-[1.6]">
+            <Icon name="pin" />
+            {tx(contact.address, lang)}
+          </span>
+          <a href={`tel:${contact.phone.replace(/\D/g, "")}`} className="flex w-fit items-center gap-2 text-footer-ink hover:text-white">
+            <Icon name="phone" />
             {contact.phone}
           </a>
-          <a href={`mailto:${contact.email}`} className="text-footer-ink [overflow-wrap:anywhere] hover:text-white">
+          <a href={`mailto:${contact.email}`} className="flex w-fit items-center gap-2 text-footer-ink [overflow-wrap:anywhere] hover:text-white">
+            <Icon name="mail" />
             {contact.email}
           </a>
         </div>

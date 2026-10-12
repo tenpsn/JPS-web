@@ -16,12 +16,14 @@ import { CONTACT_FIELDS, newSection, RESERVED_SLUGS, SLUG_RE, TYPES } from "../s
 import { btn, Confirm, FieldError, label, mediaSrcs, Modal, PubBar, Req, SITE_HOST, Switch, useToast, useUnsavedGuard } from "../ui";
 import { DesignPanel } from "./DesignPanel";
 import { getVal } from "./fields";
-import { GlobalEditor } from "./GlobalEditor";
+import { GlobalEditor, ProductPageEditor } from "./GlobalEditor";
 import { errKey, SectionCard, type Errors } from "./SectionCard";
 
 type Perms = { contentEdit: boolean; contentPublish: boolean; contentDel: boolean; designView: boolean; designEdit: boolean; designPublish: boolean };
 type Dev = "d" | "t" | "m";
 const GLOBAL = "__global";
+/** หน้ารายละเอียดสินค้า ไม่ได้เป็นหน้าที่เพิ่มส่วนได้ จึงมีแท็บของตัวเอง */
+const PRODUCT = "__product";
 /** หน้าตัวอย่างแสดงที่ความกว้างจริงของแต่ละอุปกรณ์ให้ขนาดตัวอักษรและระยะห่างตรงกับของจริง แล้วย่อลงให้พอดีช่อง */
 const DEV_W: Record<Dev, number> = { d: 1280, t: 820, m: 390 };
 
@@ -83,13 +85,15 @@ function validate(w: Working): Errors {
   return e;
 }
 
-export function Editor({ mode, initial, hasDraft, initialRev, categories, initialPage, perms }: {
+export function Editor({ mode, initial, hasDraft, initialRev, categories, initialPage, sampleSku = "", perms }: {
   mode: "content" | "design";
   initial: Working;
   hasDraft: boolean;
   initialRev: number;
   categories: Category[];
   initialPage: string;
+  /** สินค้าที่ใช้แสดงตัวอย่างหน้ารายละเอียดสินค้า */
+  sampleSku?: string;
   perms: Perms;
 }) {
   const { lang: ui, t } = useAdmin();
@@ -98,7 +102,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
   const [w, setW] = useState<Working>(initial);
   const [savedW, setSavedW] = useState<Working>(initial);
   const [draft, setDraft] = useState(hasDraft);
-  const [pageId, setPageId] = useState(initial.pages.some((p) => p.id === initialPage) ? initialPage : "home");
+  const [pageId, setPageId] = useState([...initial.pages.map((p) => p.id), GLOBAL, PRODUCT].includes(initialPage) ? initialPage : "home");
   const [lang, setLang] = useState<Locale>("th");
   const [openSec, setOpenSec] = useState<string | null>(null);
   const [errors, setErrors] = useState<Errors>({});
@@ -117,6 +121,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
   const canEdit = mode === "design" ? perms.designEdit : perms.contentEdit;
   const canPublish = mode === "design" ? perms.designPublish : perms.contentPublish;
   const isGlobal = pageId === GLOBAL;
+  const isProduct = pageId === PRODUCT;
   const page = w.pages.find((p) => p.id === pageId) ?? w.pages[0];
   const unsaved = !same(w, savedW);
   useUnsavedGuard(unsaved);
@@ -241,7 +246,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
   const status = draft || unsaved ? { tone: "bg-amber-soft text-amber", label: t.content.stDraft } : { tone: "bg-green-soft text-green", label: t.content.stPub };
 
   /* กรอบแสดงหน้าตัวอย่าง */
-  const previewSrc = `/preview/${isGlobal ? "home" : page.id}?lang=${lang}&theme=${scheme}`;
+  const previewSrc = `/preview/${isGlobal ? "home" : isProduct ? `${PRODUCT}?sku=${sampleSku}&` : `${page.id}?`}lang=${lang}&theme=${scheme}`;
   const preview = (
     <div className="flex min-w-0 flex-col gap-2.5">
       <div className="flex flex-wrap items-center gap-2.5">
@@ -267,7 +272,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
           ))}
         </div>
         <span className="flex-1 text-[13px] text-ink3">{mode === "content" ? t.content.pvHint : ""}</span>
-        <a href={isGlobal ? "/" : page.slug} target="_blank" rel="noopener noreferrer" className={`${btn.link} text-[13px]`}>
+        <a href={isGlobal ? "/" : isProduct ? `/products/${sampleSku}` : page.slug} target="_blank" rel="noopener noreferrer" className={`${btn.link} text-[13px]`}>
           <AIcon name="external" size={15} />
           {t.nav.viewSite}
         </a>
@@ -301,7 +306,9 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
           </div>
         </div>
 
-        {isGlobal ? (
+        {isProduct ? (
+          <ProductPageEditor g={w.global} lang={lang} canEdit={canEdit} onChange={(global) => change({ ...w, global })} />
+        ) : isGlobal ? (
           <GlobalEditor g={w.global} lang={lang} canEdit={canEdit} onChange={(global) => change({ ...w, global, pages: syncInMenu(w.pages, global.menu) })} onPickMedia={(current, apply) => setMedia({ current, apply })} />
         ) : (
           <>
@@ -374,7 +381,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
     <div className="flex flex-col gap-4">
       <PubBar
         state={pubState}
-        ctx={mode === "design" ? t.dz.title : isGlobal ? (ui === "th" ? "ส่วนกลาง" : "Site-wide") : page.title[ui]}
+        ctx={mode === "design" ? t.dz.title : isGlobal ? (ui === "th" ? "ส่วนกลาง" : "Site-wide") : isProduct ? (ui === "th" ? "หน้ารายละเอียดสินค้า" : "Product detail page") : page.title[ui]}
         busy={pending}
         canDraft={canEdit}
         canPublish={canPublish}
@@ -447,7 +454,11 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
         <>
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto rounded-[10px] border border-line bg-surface p-1" role="tablist">
-              {[...w.pages.map((p) => ({ id: p.id, label: p.title[ui] || p.title.th })), { id: GLOBAL, label: ui === "th" ? "ส่วนกลาง" : "Site-wide" }].map((p) => (
+              {[
+                ...w.pages.map((p) => ({ id: p.id, label: p.title[ui] || p.title.th })),
+                { id: PRODUCT, label: ui === "th" ? "หน้ารายละเอียดสินค้า" : "Product detail page" },
+                { id: GLOBAL, label: ui === "th" ? "ส่วนกลาง" : "Site-wide" },
+              ].map((p) => (
                 <button
                   key={p.id}
                   type="button"
@@ -457,6 +468,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
                   className={`inline-flex min-h-10 flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border-0 px-3.5 text-[14.5px] font-semibold transition-colors ${pageId === p.id ? "bg-blue-solid text-white" : "bg-transparent text-ink2"}`}
                 >
                   {p.id === GLOBAL && <AIcon name="globe" size={16} />}
+                  {p.id === PRODUCT && <AIcon name="box" size={16} />}
                   {p.label}
                 </button>
               ))}
@@ -468,10 +480,14 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
               </button>
             )}
           </div>
-          {isGlobal ? (
+          {isGlobal || isProduct ? (
             <div className="flex items-center gap-2.5 rounded-[10px] bg-soft px-3.5 py-3 text-sm font-medium text-blue">
-              <AIcon name="globe" />
-              {t.content.globalNote}
+              <AIcon name={isProduct ? "box" : "globe"} />
+              {isProduct
+                ? ui === "th"
+                  ? "ใช้กับหน้ารายละเอียดของสินค้าทุกตัว ส่วนชื่อ รูป และรายละเอียดของสินค้าแต่ละตัว แก้ที่หน้าจัดการสินค้า"
+                  : "Applies to the detail page of every product. Each product's name, photos and details are edited in Products."
+                : t.content.globalNote}
             </div>
           ) : (
             <div className="card flex flex-wrap items-center gap-2.5 rounded-[10px] py-2 pl-3.5 pr-2">

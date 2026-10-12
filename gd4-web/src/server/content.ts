@@ -8,12 +8,14 @@ import type { DB, GlobalContent, Working } from "./types";
 
 /** ฉบับที่หน้าแก้ไขใช้ทำงาน ถ้ามีฉบับร่างใช้ฉบับร่าง ถ้าไม่มีใช้ฉบับที่เผยแพร่อยู่ เมนูหลักปรับให้ตรงกับสวิตช์ของแต่ละหน้าเสมอ */
 export function working(db: DB): Working {
-  const w = db.draft ? { pages: db.draft.pages, design: db.draft.design, global: db.draft.global } : { pages: db.pages, design: db.design, global: globalOf(db.settings) };
+  const w = db.draft
+    ? { pages: db.draft.pages, design: db.draft.design, global: { ...db.draft.global, productTiles: db.draft.global.productTiles ?? db.settings.productTiles } }
+    : { pages: db.pages, design: db.design, global: globalOf(db.settings) };
   const { pages, menu } = alignMenu(w.pages, w.global.menu);
   return { ...w, pages, global: { ...w.global, menu } };
 }
 
-export const globalOf = (s: SiteSettings): GlobalContent => ({ menu: s.menu, socials: s.socials, footer: s.footer, contact: s.contact });
+export const globalOf = (s: SiteSettings): GlobalContent => ({ menu: s.menu, socials: s.socials, footer: s.footer, contact: s.contact, productTiles: s.productTiles });
 
 /* ทำความสะอาดข้อมูล ทุกอย่างที่ส่งมาจากเบราว์เซอร์ต้องผ่านตรงนี้ */
 
@@ -25,7 +27,7 @@ const lt = (v: unknown, max = 2000): LText => {
 const img = (v: unknown) => (v === "placeholder" ? "placeholder" : typeof v === "string" && /^\/media\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(v) ? v : null);
 const id = (v: unknown, fallback: string) => (typeof v === "string" && /^[\w-]{1,64}$/.test(v) ? v : fallback);
 const BGS: SectionBg[] = ["white", "gray", "blue", "navy"];
-const ICONS: IconName[] = ["award", "users", "clock", "shield", "box", "chart", "heart", "phone", "check", "pin", "mail", "home"];
+const ICONS: IconName[] = ["award", "users", "clock", "shield", "box", "chart", "heart", "phone", "check", "pin", "mail", "home", "wrench", "factory", "search"];
 const PLATFORMS: SocialPlatform[] = ["facebook", "line", "youtube", "instagram", "linkedin", "tiktok", "x", "custom"];
 const hex = (v: unknown, fb: string) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : fb);
 const num = (v: unknown, min: number, max: number, fb: number) => {
@@ -58,7 +60,8 @@ export function cleanSection(raw: unknown): Section | null {
     id: id(s.id, fresh("s")),
     type,
     hidden: !!s.hidden,
-    bg: BGS.includes(s.bg as SectionBg) ? s.bg : def.defaultBg ?? "white",
+    // ส่วนที่ไม่มีตัวเลือกพื้นหลัง เก็บสีตั้งต้นของประเภทนั้นเสมอ
+    bg: !def.noBg && BGS.includes(s.bg as SectionBg) ? s.bg : def.defaultBg ?? "white",
     ...cleanFields(s, def.fields),
   };
   if (typeof s.anchor === "string" && /^[a-z0-9-]{1,40}$/.test(s.anchor)) out.anchor = s.anchor;
@@ -66,7 +69,10 @@ export function cleanSection(raw: unknown): Section | null {
     const items = Array.isArray(s.items) ? s.items.slice(0, 50) : [];
     out.items = items.map((it) => {
       const r = (it && typeof it === "object" ? it : {}) as Record<string, unknown>;
-      return { id: id(r.id, fresh("i")), hidden: !!r.hidden, ...cleanFields(r, def.item!.fields) };
+      const clean: Record<string, unknown> = { id: id(r.id, fresh("i")), hidden: !!r.hidden, ...cleanFields(r, def.item!.fields) };
+      // แถบสิทธิประโยชน์ที่ยังไม่ได้เลือกไอคอน ให้หน้าเว็บใช้ไอคอนตามลำดับ ไม่บังคับเป็นเครื่องหมายถูก
+      if (type === "table" && r.icon === undefined) delete clean.icon;
+      return clean;
     });
   }
   // ช่องที่ไม่ใช่ข้อความธรรมดา ต้องตรวจแยกตามประเภท
@@ -80,8 +86,11 @@ export function cleanSection(raw: unknown): Section | null {
     out.count = num(s.count, 1, 24, 4);
     out.catalog = !!s.catalog;
     out.category = str(s.category, 40) || "all";
+    // กล่องปรึกษามีเฉพาะแบบรายการสินค้าทั้งหมด
+    if (!out.catalog) for (const k of ["helpTitle", "helpDesc", "helpBtn"]) delete out[k];
   }
   if (type === "textImage" && out.imgSide !== "left") out.imgSide = "right";
+  if (type === "pageHeader" && !["image", "contact"].includes(String(out.side))) out.side = "none";
   return out as Section;
 }
 
@@ -120,7 +129,14 @@ export function cleanGlobal(raw: unknown, fb: GlobalContent): GlobalContent {
     return { ...base, name: str(x?.name, 40).trim(), icon: icon === "placeholder" ? null : icon };
   });
   const c = (g.contact ?? fb.contact) as Partial<GlobalContent["contact"]>;
+  // กล่องใต้ปุ่มติดต่อในหน้ารายละเอียดสินค้า
+  const productTiles = (Array.isArray(g.productTiles) ? g.productTiles : fb.productTiles).slice(0, 8).map((x) => ({
+    id: id(x?.id, fresh("pt")),
+    icon: ICONS.includes(x?.icon as IconName) ? (x!.icon as IconName) : "check",
+    label: lt(x?.label, 80),
+  }));
   return {
+    productTiles,
     menu,
     socials,
     footer: { body: lt(g.footer?.body ?? fb.footer.body, 600), copyright: lt(g.footer?.copyright ?? fb.footer.copyright, 200) },

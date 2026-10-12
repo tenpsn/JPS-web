@@ -24,8 +24,10 @@ export const superOnly = (a: Area, x: Action) => a === "activity" && x === "del"
 export type AdminUser = {
   id: number;
   name: LText;
-  /** ตัวอักษรย่อที่แสดงในรูปโปรไฟล์ */
+  /** ตัวอักษรย่อที่แสดงในรูปโปรไฟล์ เมื่อยังไม่ได้ใส่รูป */
   ini: LText;
+  /** รูปโปรไฟล์ที่ผู้ใช้อัปโหลดเอง */
+  avatar?: string | null;
   email: string;
   role: Role;
   status: "active" | "suspended" | "invited";
@@ -71,7 +73,7 @@ export type DB = {
 };
 
 /** ส่วนที่ใช้ทั้งเว็บ ซึ่งแก้ได้ในแท็บทั้งเว็บของหน้าแก้ไขเนื้อหา */
-export type GlobalContent = Pick<SiteSettings, "menu" | "socials" | "footer" | "contact">;
+export type GlobalContent = Pick<SiteSettings, "menu" | "socials" | "footer" | "contact" | "productTiles">;
 
 /** ทุกอย่างที่หน้าแก้ไขเนื้อหาและธีมแก้ได้ ทั้งฉบับที่เผยแพร่และฉบับร่าง */
 export type Working = { pages: Page[]; design: Design; global: GlobalContent };

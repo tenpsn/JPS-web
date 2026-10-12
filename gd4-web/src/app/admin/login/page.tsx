@@ -19,9 +19,10 @@ export default async function LoginPage() {
   return (
     <div className="flex min-h-full bg-bg">
       {/* แผงแสดงแบรนด์ แสดงเฉพาะจอกว้าง */}
-      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-panel p-12 text-white min-[900px]:flex">
-        <span className="absolute inset-y-0 left-0 w-1.5 bg-brand-red" />
-        <div className="absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(255,255,255,.035)_0_2px,transparent_2px_26px)]" />
+      {/* พื้นน้ำเงินไล่สี ลายตารางจาง และวงแหวนสีแดง แบบแบนเนอร์ของหน้าเว็บ */}
+      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden border-t-[3px] border-brand-red bg-[linear-gradient(135deg,var(--panel),var(--blue-solid)_60%,var(--panel))] p-12 text-white min-[900px]:flex">
+        <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:48px_48px] [mask-image:linear-gradient(90deg,transparent,#000_70%)]" />
+        <span aria-hidden="true" className="absolute -bottom-24 -right-24 size-80 rounded-full border-[36px] border-brand-red/35" />
         <div className="relative flex items-center gap-3">
           <BrandMark brand={brand} onDark />
           <span className="flex flex-col leading-[1.2]">

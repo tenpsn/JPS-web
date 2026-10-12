@@ -40,7 +40,9 @@ export type IconName =
   | "plus"
   | "minus"
   | "home"
-  | "noimg";
+  | "noimg"
+  | "wrench"
+  | "factory";
 
 /** สีพื้นหลังของแต่ละส่วน ตรงกับตัวเลือกในหน้าแก้ไขของแอดมิน */
 export type SectionBg = "white" | "gray" | "blue" | "navy";
@@ -65,6 +67,9 @@ export type HeroSection = Base<"hero"> & {
 export type PageHeaderSection = Base<"pageHeader"> & {
   heading: LText;
   sub: LText;
+  /** ด้านขวาของส่วนหัว ไม่มี รูปภาพ หรือการ์ดติดต่อด่วน */
+  side?: "none" | "image" | "contact";
+  img?: Img;
 };
 
 export type TextSection = Base<"text"> & { heading: LText; body: LText };
@@ -98,6 +103,10 @@ export type ProductsSection = Base<"products"> & {
   count: number;
   /** แสดงสินค้าทั้งหมดพร้อมช่องค้นหาและปุ่มเลือกหมวด ใช้ในหน้าสินค้า */
   catalog?: boolean;
+  /** กล่องปรึกษาใต้รายการหมวด แสดงเฉพาะแบบรายการสินค้าทั้งหมด ถ้าหัวข้อว่างจะไม่แสดงกล่อง */
+  helpTitle?: LText;
+  helpDesc?: LText;
+  helpBtn?: LText;
 };
 
 export type LogosSection = Base<"logos"> & {
@@ -122,11 +131,10 @@ export type VideoSection = Base<"video"> & {
   cover: Img;
 };
 
+/** แสดงเป็นแถบสิทธิประโยชน์ c1 เป็นหัวข้อ c2 เป็นคำอธิบาย */
 export type TableSection = Base<"table"> & {
   heading: LText;
-  h1: LText;
-  h2: LText;
-  items: Item<{ c1: LText; c2: LText }>[];
+  items: Item<{ icon?: IconName; c1: LText; c2: LText }>[];
 };
 
 export type CtaSection = Base<"cta"> & {
@@ -140,6 +148,11 @@ export type CtaSection = Base<"cta"> & {
 
 export type FaqSection = Base<"faq"> & {
   heading: LText;
+  /** ข้อความใต้หัวข้อ ชวนให้ติดต่อทีมงานเมื่อไม่เจอคำตอบ */
+  help?: LText;
+  /** ปุ่มใต้ข้อความ ถ้าข้อความบนปุ่มหรือลิงก์ว่างจะไม่แสดงปุ่ม */
+  btnLabel?: LText;
+  btnUrl?: string;
   items: Item<{ q: LText; a: LText }>[];
 };
 
@@ -148,8 +161,14 @@ export type StepsSection = Base<"steps"> & {
   items: Item<{ title: LText; desc: LText }>[];
 };
 
-/** ข้อมูลติดต่อดึงมาจากการตั้งค่าของเว็บ ส่วนนี้เพิ่มแค่ฟอร์มติดต่อ */
-export type ContactSection = Base<"contact"> & { heading: LText };
+/** การ์ดหมวดสินค้า ดึงชื่อหมวด จำนวนสินค้า และรูปจากระบบจัดการสินค้าเอง */
+export type CategoriesSection = Base<"categories"> & { heading: LText; sub: LText };
+
+/** ข้อมูลติดต่อเก็บไว้ใช้ทั้งเว็บ ส่วนนี้มีการ์ดเลือกเรื่องด้านบนเพิ่มเข้ามา */
+export type ContactSection = Base<"contact"> & {
+  heading: LText;
+  items: Item<{ icon: IconName; title: LText; desc: LText; btnLabel: LText; btnUrl: string }>[];
+};
 
 export type Section =
   | HeroSection
@@ -159,6 +178,7 @@ export type Section =
   | CardsSection
   | StatsSection
   | ProductsSection
+  | CategoriesSection
   | LogosSection
   | TimelineSection
   | GallerySection
@@ -194,6 +214,9 @@ export type MenuItem = {
 /** custom คือช่องทางอื่นที่แอดมินตั้งชื่อและอัปโหลดโลโก้เอง */
 export type SocialPlatform = "facebook" | "line" | "youtube" | "instagram" | "linkedin" | "tiktok" | "x" | "custom";
 
+/** กล่องใต้ปุ่มติดต่อในหน้ารายละเอียดสินค้า ใช้กับสินค้าทุกตัว */
+export type ProductTile = { id: string; icon: IconName; label: LText };
+
 export type SiteSettings = {
   /** ชื่อแบรนด์ที่แสดงบนหัวเว็บ ท้ายเว็บ และชื่อหน้า */
   siteName: LText;
@@ -212,6 +235,7 @@ export type SiteSettings = {
   menu: MenuItem[];
   socials: { id: string; platform: SocialPlatform; url: string; name?: string; icon?: Img }[];
   footer: { body: LText; copyright: LText };
+  productTiles: ProductTile[];
 };
 
 export type Category = { id: string; name: LText };

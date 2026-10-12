@@ -4,14 +4,12 @@ import { saveUpload, type UploadKind } from "@/server/files";
 import { mutate, nowStr } from "@/server/store";
 
 /**
- * รับไฟล์ที่แอดมินอัปโหลด ได้แก่รูปภาพ ไอคอนเว็บ และฟอนต์
+ * รับไฟล์ที่แอดมินอัปโหลด ได้แก่รูปภาพ ไอคอนเว็บ ฟอนต์ และรูปโปรไฟล์
  * แยกเป็นเส้นทางนี้เพื่อให้อัปโหลดไฟล์ขนาดใหญ่ได้โดยไม่ต้องขยายขีดจำกัดของทั้งระบบ
  */
 export async function POST(req: Request) {
   const user = await getCurrentUser();
-  if (!user || !(can(user, "products", "edit") || can(user, "content", "edit") || can(user, "design", "edit") || can(user, "settings", "edit"))) {
-    return Response.json({ error: "forbidden" }, { status: 403 });
-  }
+  if (!user) return Response.json({ error: "forbidden" }, { status: 403 });
   // รับเฉพาะคำขอที่มาจากเว็บของเราเอง เพื่อกันเว็บอื่นแอบส่งฟอร์มเข้ามา
   const origin = req.headers.get("origin");
   if (origin && new URL(origin).host !== req.headers.get("host")) return Response.json({ error: "forbidden" }, { status: 403 });
@@ -19,10 +17,16 @@ export async function POST(req: Request) {
   const fd = await req.formData();
   const file = fd.get("file");
   const kind = String(fd.get("kind")) as UploadKind;
-  if (!(file instanceof File) || !["image", "icon", "font"].includes(kind)) return Response.json({ error: "bad" }, { status: 400 });
+  if (!(file instanceof File) || !["image", "icon", "font", "avatar"].includes(kind)) return Response.json({ error: "bad" }, { status: 400 });
+  // รูปโปรไฟล์ทุกคนอัปโหลดได้ ไฟล์อื่นต้องมีสิทธิ์แก้ไขส่วนใดส่วนหนึ่ง
+  if (kind !== "avatar" && !(can(user, "products", "edit") || can(user, "content", "edit") || can(user, "design", "edit") || can(user, "settings", "edit"))) {
+    return Response.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const saved = await saveUpload(file, kind);
   if ("error" in saved) return Response.json(saved, { status: 400 });
+  // รูปโปรไฟล์ไม่เก็บในคลังรูปของเว็บ และบันทึกประวัติตอนบันทึกโปรไฟล์แทน
+  if (kind === "avatar") return Response.json(saved);
   // เก็บรูปไว้ในคลังสื่อเพื่อให้นำไปใช้ซ้ำได้
   await mutate((db) => {
     // รูปและไอคอนเว็บเก็บไว้ในคลังรูป

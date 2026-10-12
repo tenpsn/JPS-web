@@ -8,12 +8,14 @@ import { ensureSchema, pool } from "./db";
  * ถ้าภายหลังย้ายไป S3 โค้ดที่เรียกใช้ยังเห็นแค่ลิงก์ src เหมือนเดิม
  */
 
-export type UploadKind = "image" | "icon" | "font";
+export type UploadKind = "image" | "icon" | "font" | "avatar";
 
 const RULES: Record<UploadKind, { max: number; types: Record<string, string> }> = {
   image: { max: 5 * 1024 * 1024, types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } },
   // ไอคอนเว็บรับ ICO เพิ่มจากรูปทั่วไป
   icon: { max: 5 * 1024 * 1024, types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/x-icon": "ico" } },
+  // รูปโปรไฟล์ย่อขนาดในเบราว์เซอร์ก่อนส่ง จึงจำกัดขนาดไว้ต่ำ
+  avatar: { max: 1024 * 1024, types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } },
   font: { max: 5 * 1024 * 1024, types: { "font/woff2": "woff2", "font/woff": "woff", "font/ttf": "ttf", "font/otf": "otf" } },
 };
 

@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { LocalLink } from "@/components/LocalLink";
+import { telHref } from "@/components/sections/shared";
 import { href, stripLocale, tx } from "@/i18n/config";
 import { useI18n } from "@/i18n/client";
 import type { Img, Locale, MenuItem } from "@/types/site";
@@ -23,7 +24,7 @@ function isActive(path: string, url: string) {
   return u === "/" ? path === "/" : path === u || path.startsWith(u + "/");
 }
 
-export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; siteName: string; logo?: Img; logoDark?: Img }) {
+export function Header({ menu, siteName, logo, logoDark, phone }: { menu: MenuItem[]; siteName: string; logo?: Img; logoDark?: Img; phone?: string }) {
   const { lang, t } = useI18n();
   const path = stripLocale(usePathname());
   const [open, setOpen] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; s
   const total = menu.length;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg shadow-[0_8px_20px_-18px_rgba(0,0,0,.4)]">
+    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 shadow-[0_8px_20px_-18px_rgba(0,0,0,.4)] backdrop-blur-md">
       {/* บนมือถือลดระยะห่างลง ให้โลโก้ ปุ่มภาษา ปุ่มธีม และเมนูพอดีจอกว้าง 360px */}
       <div className="mx-auto flex h-[76px] max-w-[1280px] items-center gap-2 px-4 sm:gap-5 sm:px-[var(--sec-px)]">
         <LocalLink href="/" aria-label={siteName} className="flex flex-none items-center gap-2.5 text-ink hover:text-ink">
@@ -122,6 +123,13 @@ export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; s
 
         <LangSwitch lang={lang} path={path} label={t.language} />
         <ThemeToggle label={t.theme} />
+        {/* ปุ่มโทรสีแดง แสดงเมื่อจอกว้างพอ บนจอแคบย้ายไปอยู่ในเมนูมือถือ */}
+        {phone && (
+          <a href={telHref(phone)} className={`hidden mid:inline-flex ${phoneCls}`}>
+            <Icon name="phone" />
+            {phone}
+          </a>
+        )}
 
         <button
           type="button"
@@ -147,6 +155,7 @@ export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; s
             setDrawerSub(null);
           }}
           closeLabel={t.close}
+          phone={phone}
         />
       )}
       <ScrollProgress />
@@ -193,21 +202,16 @@ function NavItem({ item, lang, className, active, open, setOpen }: {
   setOpen: (v: boolean) => void;
 }) {
   const kids = item.children ?? [];
-  const linkCls = `relative inline-flex items-center gap-1 whitespace-nowrap rounded-ctl px-3 py-2.5 text-menu font-medium transition-colors hover:text-primary ${
-    active ? "text-primary" : "text-ink"
+  // เมนูเป็นแคปซูล หน้าที่เปิดอยู่มีพื้นสีฟ้าอ่อน
+  const linkCls = `inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-2 text-menu font-medium transition-colors hover:bg-soft hover:text-primary ${
+    active ? "bg-soft text-primary" : "text-ink"
   }`;
-  const bar = (
-    <span
-      className={`absolute inset-x-3 bottom-0.5 h-0.5 rounded-sm bg-accent-solid transition-transform duration-300 ${active ? "scale-x-100" : "scale-x-0"}`}
-    />
-  );
 
   if (!kids.length) {
     return (
       <div className={`relative hidden h-full items-center ${className}`}>
         <LocalLink href={item.url} className={linkCls} aria-current={active ? "page" : undefined}>
           {tx(item.label, lang)}
-          {bar}
         </LocalLink>
       </div>
     );
@@ -231,11 +235,10 @@ function NavItem({ item, lang, className, active, open, setOpen }: {
         <span className={`grid transition-transform duration-[250ms] ${open ? "rotate-180" : ""}`}>
           <Icon name="chevD" size={16} />
         </span>
-        {bar}
       </button>
       {open && (
         <div
-          className={`absolute left-0 top-[calc(100%-6px)] grid gap-0.5 rounded-card border border-line bg-card p-2 shadow-card [animation:s-drop_.22s_cubic-bezier(.2,.7,.2,1)_both] ${
+          className={`absolute left-0 top-[calc(100%-6px)] z-10 grid gap-0.5 rounded-card border border-line bg-card p-2 shadow-card [animation:s-drop_.22s_cubic-bezier(.2,.7,.2,1)_both] ${
             wide ? "w-[440px] grid-cols-2" : "w-60 grid-cols-1"
           }`}
         >
@@ -275,7 +278,7 @@ function MoreMenu({ menu, lang, label, open, setOpen }: {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap border-0 bg-transparent px-3 py-2.5 text-menu font-medium text-ink"
+        className="inline-flex cursor-pointer items-center gap-1 whitespace-nowrap rounded-full border-0 bg-transparent px-3.5 py-2 text-menu font-medium text-ink hover:bg-soft hover:text-primary"
       >
         {label}
         <span className={`grid transition-transform duration-[250ms] ${open ? "rotate-180" : ""}`}>
@@ -283,7 +286,7 @@ function MoreMenu({ menu, lang, label, open, setOpen }: {
         </span>
       </button>
       {open && (
-        <div className="absolute right-0 top-[calc(100%-6px)] flex w-[260px] flex-col gap-0.5 rounded-card border border-line bg-card p-2 shadow-card [animation:s-drop_.22s_both]">
+        <div className="absolute right-0 top-[calc(100%-6px)] z-10 flex w-[260px] flex-col gap-0.5 rounded-card border border-line bg-card p-2 shadow-card [animation:s-drop_.22s_both]">
           {menu.map((m, i) => {
             // เมนูที่ไม่แสดงบนแถบในความกว้างนั้น จะย้ายมาอยู่ในเมนูเพิ่มเติม
             const cls = SLOTS.map((s) => (total > s.max && i >= visibleCount(total, s.max) ? s.show : s.hide)).join(" ");
@@ -362,7 +365,7 @@ function ThemeToggle({ label }: { label: string }) {
   );
 }
 
-function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, closeLabel }: {
+function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, closeLabel, phone }: {
   menu: MenuItem[];
   lang: Locale;
   siteName: string;
@@ -371,6 +374,7 @@ function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, closeLabel }
   setSub: (v: string | null) => void;
   onClose: () => void;
   closeLabel: string;
+  phone?: string;
 }) {
   return (
     <>
@@ -433,7 +437,18 @@ function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, closeLabel }
             );
           })}
         </nav>
+        {phone && (
+          <div className="flex-none border-t border-line p-4">
+            <a href={telHref(phone)} className={`flex w-full justify-center ${phoneCls}`}>
+              <Icon name="phone" />
+              {phone}
+            </a>
+          </div>
+        )}
       </aside>
     </>
   );
 }
+
+const phoneCls =
+  "min-h-11 flex-none items-center gap-2 whitespace-nowrap rounded-btn bg-accent-solid px-4 text-[15px] font-semibold text-white hover:text-white hover:brightness-110";

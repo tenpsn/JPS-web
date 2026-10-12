@@ -31,6 +31,8 @@
   --ph2: #e5eaf2;
   --ph-ink: #5f6e84;
   --side: #0a1f44;
+  /* แถบตัวเลขสีน้ำเงินเข้มแบบหน้าแรกของเว็บ */
+  --navy: #0f2f66;
   --overlay: rgba(10, 20, 40, 0.5);
   --shadow: 0 1px 2px rgba(15, 27, 45, 0.04), 0 2px 8px rgba(15, 27, 45, 0.04);
   --shadow-h: 0 18px 40px -12px rgba(15, 40, 90, 0.22);
@@ -64,6 +66,7 @@
   --ph2: #141e32;
   --ph-ink: #8796ad;
   --side: #070d16;
+  --navy: #0d2244;
   --overlay: rgba(0, 0, 0, 0.6);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-h: 0 20px 44px -12px rgba(0, 0, 0, 0.6);
@@ -97,6 +100,7 @@
   --color-ph2: var(--ph2);
   --color-ph-ink: var(--ph-ink);
   --color-side: var(--side);
+  --color-navy: var(--navy);
   --color-side-ink: #c5d0e2;
   --color-side-ink2: #9fb0c9;
   --color-brand-red: #e8483d;

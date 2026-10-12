@@ -17,17 +17,21 @@ export function NotFoundView() {
         <h1 className="m-0 font-head text-h2 font-bold leading-[1.3]">{t.nf.t}</h1>
         <p className="m-0 max-w-[520px] text-ink2">{t.nf.d}</p>
         {/* ฟอร์มค้นหาธรรมดา กดแล้วไปหน้ารายการสินค้าพร้อมคำค้น */}
-        <form action={href("/products", lang)} method="get" role="search" className="relative block w-full max-w-[460px]">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 grid -translate-y-1/2 text-ink3">
-            <Icon name="search" />
-          </span>
-          <input
-            type="search"
-            name="q"
-            aria-label={t.p.search}
-            placeholder={t.p.search}
-            className="min-h-[50px] w-full rounded-input border border-line bg-card pl-11 pr-4 text-body text-ink outline-none focus:border-primary-solid"
-          />
+        <form action={href("/products", lang)} method="get" role="search" className="w-full max-w-[460px] text-left">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-small font-semibold text-ink">{t.p.search}</span>
+            <span className="relative block">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 grid -translate-y-1/2 text-ink3">
+                <Icon name="search" />
+              </span>
+              <input
+                type="search"
+                name="q"
+                placeholder={t.p.searchPh}
+                className="min-h-[50px] w-full rounded-input border border-line bg-card pl-11 pr-4 text-body text-ink outline-none focus:border-primary-solid"
+              />
+            </span>
+          </label>
         </form>
         <div className="flex flex-wrap justify-center gap-3">
           <LocalLink href="/" className={`${btn.primary} py-[13px]`}>

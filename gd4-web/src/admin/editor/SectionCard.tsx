@@ -118,6 +118,7 @@ export function SectionCard({ s, n, open, onToggle, onChange, onDup, onDelete, o
           <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3.5">
             {def.fields
               .filter((f) => !(s.type === "products" && f.key === "count" && (s as { catalog?: boolean }).catalog))
+              .filter((f) => !f.showIf || String(o[f.showIf.key] ?? "") === f.showIf.v)
               .map((f) => (
                 <FieldInput
                   key={f.key}

@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { initials } from "@/lib/initials";
 import { logActivity } from "@/server/activity";
 import { assertCan } from "@/server/auth";
 import { DEFAULT_PERMS } from "@/server/seed";
@@ -17,12 +18,6 @@ export type UserErrors = Partial<Record<"name" | "email", "errName" | "errEmail"
 export type UserResult = { ok: true; inviteLink?: string } | { ok: false; errors?: UserErrors; error?: "noSelf" | "lastSuper" };
 
 const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
-
-/** ชื่อย่อ ใช้อักษรตัวแรกของสองคำแรกในชื่อ */
-function initials(name: string) {
-  const parts = name.replace(/^(นาย|นาง|นางสาว|ดร\.|Dr\.?)\s*/, "").trim().split(/\s+/);
-  return (parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "");
-}
 
 function newInvite() {
   const token = randomBytes(24).toString("base64url");

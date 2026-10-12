@@ -24,6 +24,8 @@ export type Field = {
   url?: boolean;
   /** คำอธิบายใต้ช่อง */
   hint?: LText;
+  /** แสดงช่องนี้เฉพาะเมื่อช่องอื่นมีค่าตามที่กำหนด */
+  showIf?: { key: string; v: string };
 };
 
 export type TypeDef = {
@@ -70,7 +72,7 @@ export const TYPES: Record<SectionType, TypeDef> = {
     item: { name: L("การ์ด", "Card"), summary: "title", fields: [{ key: "icon", kind: "chips", label: L("ไอคอน", "Icon"), opts: "icons", wide: true }, F.title, F.desc] },
   },
   stats: {
-    group: "basic", icon: "chart", name: L("ตัวเลข", "Figures"), desc: L("ตัวเลขความสำเร็จ", "Key figures"), defaultBg: "blue", fields: [F.heading],
+    group: "basic", icon: "chart", name: L("ตัวเลข", "Figures"), desc: L("ตัวเลขความสำเร็จ", "Key figures"), defaultBg: "navy", fields: [F.heading],
     item: { name: L("ตัวเลข", "Figure"), summary: "value", fields: [{ key: "value", kind: "text", label: L("ตัวเลข", "Figure"), i18n: true, req: true }, { key: "label", kind: "text", label: L("คำอธิบายตัวเลข", "Label"), i18n: true }] },
   },
   gallery: {
@@ -82,21 +84,49 @@ export const TYPES: Record<SectionType, TypeDef> = {
     fields: [F.heading, F.body, { key: "videoUrl", kind: "mono", label: L("ลิงก์วิดีโอ (YouTube / Vimeo)", "Video link (YouTube / Vimeo)"), ph: "https://youtube.com/watch?v=…", wide: true, url: true }, { key: "cover", kind: "image", label: L("ภาพหน้าปกวิดีโอ", "Video cover") }],
   },
   table: {
-    group: "basic", icon: "list", name: L("ตาราง", "Table"), desc: L("ตารางสองคอลัมน์", "Two-column table"), defaultBg: "gray",
-    fields: [F.heading, { key: "h1", kind: "text", label: L("หัวคอลัมน์ซ้าย", "Left column header"), i18n: true }, { key: "h2", kind: "text", label: L("หัวคอลัมน์ขวา", "Right column header"), i18n: true }],
-    item: { name: L("แถว", "Row"), summary: "c1", fields: [{ key: "c1", kind: "text", label: L("คอลัมน์ซ้าย", "Left column"), i18n: true, req: true }, { key: "c2", kind: "text", label: L("คอลัมน์ขวา", "Right column"), i18n: true }] },
+    group: "basic", icon: "list", name: L("แถบสิทธิประโยชน์", "Benefits strip"), desc: L("หัวข้อสั้นคู่คำอธิบาย แสดงเป็นแถบมีไอคอน", "Short titles with descriptions, shown as an icon strip"), defaultBg: "gray",
+    fields: [F.heading],
+    item: {
+      name: L("รายการ", "Item"),
+      summary: "c1",
+      fields: [
+        { key: "icon", kind: "chips", label: L("ไอคอน", "Icon"), opts: "icons", wide: true },
+        { key: "c1", kind: "text", label: L("หัวข้อ", "Title"), i18n: true, req: true },
+        { key: "c2", kind: "text", label: L("คำอธิบาย", "Description"), i18n: true },
+      ],
+    },
   },
   cta: {
-    group: "basic", icon: "external", name: L("แบนเนอร์ CTA", "CTA banner"), desc: L("ข้อความชวนติดต่อพร้อมปุ่ม", "Call to action with buttons"), defaultBg: "navy",
+    group: "basic", icon: "external", name: L("แบนเนอร์ CTA", "CTA banner"), desc: L("ข้อความชวนติดต่อพร้อมปุ่ม", "Call to action with buttons"), defaultBg: "white",
     fields: [F.heading, F.sub, F.btnLabel, F.btnUrl, F.btn2Label, F.btn2Url],
   },
   faq: {
-    group: "basic", icon: "alert", name: L("คำถามที่พบบ่อย", "FAQ"), desc: L("คำถาม-คำตอบแบบพับเก็บได้", "Collapsible questions and answers"), fields: [F.heading],
+    group: "basic", icon: "alert", name: L("คำถามที่พบบ่อย", "FAQ"), desc: L("คำถาม-คำตอบแบบพับเก็บได้", "Collapsible questions and answers"),
+    fields: [
+      F.heading,
+      { key: "help", kind: "area", label: L("ข้อความใต้หัวข้อ", "Text under the heading"), i18n: true, wide: true, hint: L("เว้นว่างไว้ถ้าไม่ต้องการ", "Leave empty to hide.") },
+      { ...F.btnLabel, hint: L("เว้นข้อความหรือลิงก์ว่างไว้ถ้าไม่ต้องการปุ่ม", "Leave the text or link empty to hide the button.") },
+      F.btnUrl,
+    ],
     item: { name: L("คำถาม", "Question"), summary: "q", fields: [{ key: "q", kind: "text", label: L("คำถาม", "Question"), i18n: true, req: true, wide: true }, { key: "a", kind: "area", label: L("คำตอบ", "Answer"), i18n: true, wide: true }] },
   },
-  pageHeader: { group: "basic", icon: "page", name: L("ส่วนหัวของหน้า", "Page header"), desc: L("หัวข้อหน้า เส้นทาง และคำโปรย", "Page title, breadcrumb and intro"), noBg: true, defaultBg: "navy", fields: [{ ...F.heading, req: true }, F.sub] },
+  pageHeader: { group: "basic", icon: "page", name: L("ส่วนหัวของหน้า", "Page header"), desc: L("หัวข้อหน้า เส้นทาง และคำโปรย", "Page title, breadcrumb and intro"), noBg: true, defaultBg: "gray",
+    fields: [
+      { ...F.heading, req: true },
+      F.sub,
+      {
+        key: "side",
+        kind: "chips",
+        label: L("ด้านขวาของส่วนหัว", "Right side"),
+        opts: [{ v: "none", label: L("ไม่มี", "None") }, { v: "image", label: L("รูปภาพ", "Image") }, { v: "contact", label: L("การ์ดติดต่อด่วน", "Quick contact card") }],
+        wide: true,
+        hint: L("การ์ดติดต่อด่วนใช้เบอร์โทร อีเมล และเวลาทำการจากข้อมูลติดต่อในหน้าติดต่อเรา และใช้ LINE จากแท็บส่วนกลาง", "The quick contact card uses the phone, email and hours from Contact details on the Contact page, and LINE from the Global tab."),
+      },
+      { ...F.img, showIf: { key: "side", v: "image" } },
+    ],
+  },
   hero: {
-    group: "special", icon: "image", name: L("สไลด์ Hero", "Hero slides"), desc: L("ภาพสไลด์ด้านบนสุดของหน้า", "Rotating banner at the top of the page"), noBg: true, defaultBg: "navy",
+    group: "special", icon: "image", name: L("สไลด์ Hero", "Hero slides"), desc: L("ภาพสไลด์ด้านบนสุดของหน้า", "Rotating banner at the top of the page"), noBg: true, defaultBg: "gray",
     fields: [chips("autoplay", L("เปลี่ยนสไลด์ทุก", "Slide interval"), [4, 5, 6, 8], L("วินาที", "s"))],
     item: { name: L("สไลด์", "Slide"), summary: "title", fields: [F.title, { key: "sub", kind: "area", label: L("ข้อความรอง", "Subheading"), i18n: true, wide: true }, F.img, F.btnLabel, F.btnUrl] },
   },
@@ -114,11 +144,38 @@ export const TYPES: Record<SectionType, TypeDef> = {
   },
   products: {
     group: "special", icon: "box", name: L("รายการสินค้า", "Product grid"), desc: L("ดึงจากระบบจัดการสินค้าอัตโนมัติ", "Pulled from the product catalog"),
-    fields: [F.heading, F.sub, { key: "category", kind: "chips", label: L("หมวดหมู่ที่แสดง", "Category shown"), opts: "cats", wide: true }, chips("count", L("จำนวนสินค้าที่แสดง", "Products shown"), [4, 8, 12])],
+    fields: [
+      F.heading,
+      F.sub,
+      { key: "category", kind: "chips", label: L("หมวดหมู่ที่แสดง", "Category shown"), opts: "cats", wide: true },
+      chips("count", L("จำนวนสินค้าที่แสดง", "Products shown"), [4, 8, 12]),
+      // กล่องปรึกษามีเฉพาะแบบรายการสินค้าทั้งหมดในหน้าสินค้า
+      {
+        key: "helpTitle", kind: "text", label: L("กล่องปรึกษา · หัวข้อ", "Advice box · title"), i18n: true, wide: true, showIf: { key: "catalog", v: "true" },
+        hint: L("กล่องใต้รายการหมวดด้านซ้าย ปุ่มโทรใช้เบอร์จากข้อมูลติดต่อในหน้าติดต่อเรา เว้นหัวข้อว่างไว้ถ้าไม่ต้องการกล่องนี้", "The box under the category list. The button calls the phone in Contact details. Leave the title empty to hide the box."),
+      },
+      { key: "helpDesc", kind: "area", label: L("กล่องปรึกษา · คำอธิบาย", "Advice box · description"), i18n: true, wide: true, showIf: { key: "catalog", v: "true" } },
+      { key: "helpBtn", kind: "text", label: L("กล่องปรึกษา · ข้อความบนปุ่ม", "Advice box · button text"), i18n: true, showIf: { key: "catalog", v: "true" } },
+    ],
+  },
+  categories: {
+    group: "special", icon: "grid", name: L("หมวดสินค้า", "Product categories"), desc: L("การ์ดหมวดสินค้าพร้อมรูปและจำนวนรุ่น", "Category cards with photo and model count"),
+    fields: [F.heading, F.sub],
   },
   contact: {
-    group: "special", icon: "phone", name: L("ข้อมูลติดต่อและแผนที่", "Contact details & map"), desc: L("ที่อยู่ เบอร์โทร อีเมล เวลาทำการ และแผนที่", "Address, phone, email, hours and map"),
+    group: "special", icon: "phone", name: L("ข้อมูลติดต่อและแผนที่", "Contact details & map"), desc: L("การ์ดเลือกเรื่อง ที่อยู่ เบอร์โทร อีเมล เวลาทำการ และแผนที่", "Topic cards, address, phone, email, hours and map"),
     fields: [F.heading],
+    item: {
+      name: L("การ์ดเลือกเรื่อง", "Topic card"),
+      summary: "title",
+      fields: [
+        { key: "icon", kind: "chips", label: L("ไอคอน", "Icon"), opts: "icons", wide: true },
+        F.title,
+        F.desc,
+        { key: "btnLabel", kind: "text", label: L("ข้อความลิงก์", "Link text"), i18n: true },
+        { ...F.btnUrl, ph: "/service" },
+      ],
+    },
   },
 };
 
@@ -141,7 +198,8 @@ export const CONTACT_FIELDS: Field[] = [
   },
 ];
 
-export const ICON_CHOICES: IconName[] = ["award", "shield", "clock", "users", "check", "heart", "box", "chart", "phone", "pin"];
+/** ไอคอนที่ให้เลือกต้องมีทั้งในหน้าเว็บและในหลังบ้าน ถ้ามีไม่ครบจะตรวจไม่ผ่านตั้งแต่ตอนเขียนโค้ด */
+export const ICON_CHOICES: (IconName & AIconName)[] = ["award", "shield", "clock", "users", "check", "heart", "box", "chart", "phone", "pin", "wrench", "factory", "search", "mail"];
 
 /** สร้างส่วนใหม่ตามประเภทที่เลือก พร้อมค่าว่างเริ่มต้น */
 export function newSection(type: SectionType, id: string): Section {

@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ActivityList } from "@/admin/ActivityList";
 import { AIcon, type AIconName } from "@/admin/AIcon";
-import { avatarColor } from "@/admin/avatar";
+import { Avatar } from "@/admin/Avatar";
 import { useAdmin } from "@/admin/context";
 import { relDate } from "@/admin/i18n";
-import { btn, Confirm, FieldError, label, Modal, PAGE_SIZE, pageTitle, Pager, RadioCard, Req, useToast } from "@/admin/ui";
+import { btn, Busy, Confirm, FieldError, iconTile, label, Modal, PAGE_SIZE, PageHead, Pager, RadioCard, Req, useToast } from "@/admin/ui";
 import { ACTIONS, allowed, AREAS, ROLES, superOnly, type Activity, type Perms, type PublicUser, type Role } from "@/server/types";
 import { deleteUser, resendInvite, savePerms, saveUser, setUserStatus, type UserErrors, type UserResult } from "../../actions/users";
 
@@ -17,7 +17,7 @@ const ROLE_TONE: Record<Role, string> = {
   products: "bg-green-soft text-green",
   viewer: "bg-surface2 text-ink2",
 };
-const ROLE_DOT: Record<Role, string> = { super: "bg-red", editor: "bg-blue", products: "bg-green", viewer: "bg-ink2" };
+const ROLE_ICON: Record<Role, AIconName> = { super: "shield", editor: "edit", products: "box", viewer: "eye" };
 const ST_TONE = { active: "bg-green-soft text-green", suspended: "bg-amber-soft text-amber", invited: "bg-soft text-blue" };
 
 type Tab = "list" | "roles" | "log";
@@ -74,20 +74,41 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
 
   return (
     <div className="flex flex-col gap-[18px]">
-      <div className="anim-up flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <h1 className={pageTitle}>{t.users.title}</h1>
-          <p className="m-0 text-[15px] text-ink2">{t.users.sub}</p>
-        </div>
-        {canEdit && (
-          <button type="button" onClick={() => (setErrors({}), setForm({ id: null, name: "", email: "", role: "editor" }))} className={btn.primary}>
-            <AIcon name="plus" />
-            {t.users.add}
-          </button>
-        )}
+      <PageHead
+        title={t.users.title}
+        sub={t.users.sub}
+        actions={
+          canEdit && (
+            <button type="button" onClick={() => (setErrors({}), setForm({ id: null, name: "", email: "", role: "editor" }))} className={btn.primary}>
+              <AIcon name="plus" />
+              {t.users.add}
+            </button>
+          )
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {(
+          [
+            [t.users.sumAll, users.length, "users", false],
+            [t.users.sActive, users.filter((u) => u.status === "active").length, "check", false],
+            [t.users.sInvited, users.filter((u) => u.status === "invited").length, "mail", true],
+            [t.users.sSuspended, users.filter((u) => u.status === "suspended").length, "lock", true],
+          ] as [string, number, AIconName, boolean][]
+        ).map(([name, n, icon, red], i) => (
+          <div key={name} style={{ animationDelay: `${i * 0.04}s` }} className="card anim-up flex items-center gap-3.5 p-4">
+            <span className={iconTile(red)}>
+              <AIcon name={icon} size={22} />
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[26px] font-bold leading-[1.15] tabular-nums">{n}</span>
+              <span className="text-[13.5px] text-ink2">{name}</span>
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-[10px] border border-line bg-surface p-1" role="tablist">
+      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1" role="tablist">
         {tabs.map(([k, lbl, icon]) => (
           <button
             key={k}
@@ -95,8 +116,8 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`inline-flex min-h-[42px] flex-none cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border-0 px-3.5 text-[14.5px] font-semibold transition-colors ${
-              tab === k ? "bg-blue-solid text-white" : "bg-transparent text-ink2"
+            className={`inline-flex min-h-[42px] flex-none cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border-0 px-4 text-[14.5px] font-semibold transition-colors ${
+              tab === k ? "bg-blue-solid text-white" : "bg-transparent text-ink2 hover:bg-soft hover:text-blue"
             }`}
           >
             <AIcon name={icon} />
@@ -132,7 +153,7 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
               {t.c.cancel}
             </button>
             <button type="button" onClick={submitUser} disabled={pending} className={btn.primary}>
-              {t.c.save}
+              <Busy busy={pending}>{t.c.save}</Busy>
             </button>
           </>
         }
@@ -166,7 +187,7 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
             </div>
             {!form.id && (
               <span className="flex items-center gap-2 text-[13.5px] text-ink2">
-                <AIcon name="mail" />
+                <AIcon name="copy" />
                 {t.users.invite}
               </span>
             )}
@@ -245,11 +266,7 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
       )}
     </>
   );
-  const avatar = (u: PublicUser, s: string) => (
-    <span className={`grid flex-none place-items-center rounded-full text-[13px] font-bold text-white ${s}`} style={{ background: avatarColor(u.id) }}>
-      {u.ini[lang]}
-    </span>
-  );
+  const avatar = (u: PublicUser, s: string) => <Avatar u={u} lang={lang} className={`text-[13px] ${s}`} />;
 
   return (
     <>
@@ -331,6 +348,7 @@ function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]
   const [draft, setDraft] = useState<Perms>(() => structuredClone(perms));
   const [pending, start] = useTransition();
   const locked = role === "super" || !canEdit;
+  const dirty = JSON.stringify(draft) !== JSON.stringify(perms);
   const areaLabel = (a: (typeof AREAS)[number]) => t.nav[a];
 
   const toggle = (a: (typeof AREAS)[number], x: (typeof ACTIONS)[number]) =>
@@ -354,14 +372,16 @@ function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]
             role="radio"
             aria-checked={role === r}
             onClick={() => setRole(r)}
-            className={`flex cursor-pointer flex-col gap-1 rounded-xl border-[1.5px] px-4 py-3.5 text-left text-ink transition-colors ${role === r ? "border-blue-solid bg-soft" : "border-line bg-surface"}`}
+            className={`flex cursor-pointer items-center gap-3 rounded-[14px] border-[1.5px] px-4 py-3.5 text-left text-ink transition-[border-color,background-color,transform] hover:-translate-y-0.5 ${role === r ? "border-blue-solid bg-soft" : "border-line bg-surface"}`}
           >
-            <span className="flex items-center gap-2">
-              <span className={`size-[9px] rounded-full ${ROLE_DOT[r]}`} />
-              <strong className={`text-[15px] ${role === r ? "text-blue" : "text-ink"}`}>{t.users[r]}</strong>
+            <span className={iconTile(r === "super")}>
+              <AIcon name={ROLE_ICON[r]} size={22} />
             </span>
-            <span className="text-[13px] text-ink2">
-              {users.filter((u) => u.role === r).length} {t.users.people}
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <strong className={`text-[15px] ${role === r ? "text-blue" : "text-ink"}`}>{t.users[r]}</strong>
+              <span className="text-[13px] text-ink2">
+                {users.filter((u) => u.role === r).length} {t.users.people}
+              </span>
             </span>
           </button>
         ))}
@@ -379,7 +399,29 @@ function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]
             </span>
           )}
         </div>
-        <div className="overflow-auto">
+        <div className="flex flex-col md2:hidden">
+          {AREAS.map((a) => (
+            <div key={a} className="flex flex-col gap-2 border-t border-line px-4 py-3 first:border-t-0">
+              <strong className="text-[15px]">{areaLabel(a)}</strong>
+              <div className="flex flex-wrap gap-2">
+                {ACTIONS.filter((x) => allowed(a, x)).map((x) => (
+                  <label key={x} className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-line bg-surface2 px-3.5 text-sm font-medium" title={superOnly(a, x) ? t.users.superOnly : undefined}>
+                    <input
+                          type="checkbox"
+                          checked={role === "super" || (!superOnly(a, x) && draft[role][a][x])}
+                          disabled={locked || superOnly(a, x)}
+                          onChange={() => toggle(a, x)}
+                          aria-label={`${areaLabel(a)} · ${t.users[`a_${x}`]}`}
+                          className="size-5 cursor-pointer accent-[var(--blue-solid)] disabled:cursor-not-allowed"
+                        />
+                    {t.users[`a_${x}`]}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-auto md2:block">
           <table className="w-full min-w-[520px] border-collapse">
             <thead>
               <tr className="bg-surface2">
@@ -421,24 +463,34 @@ function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]
           </table>
         </div>
         {canEdit && (
-          <div className="flex justify-end gap-2.5 border-t border-line px-5 py-3.5">
-            <button type="button" onClick={() => setDraft(structuredClone(perms))} className={`${btn.outline} min-h-[42px] px-3.5 text-[14.5px]`}>
+          <div className="flex flex-wrap items-center justify-end gap-2.5 border-t border-line px-5 py-3.5">
+            {dirty && (
+              <span className="mr-auto inline-flex items-center gap-1.5 text-[13px] font-medium text-amber">
+                <span className="size-[7px] rounded-full bg-current" />
+                {t.c.unsaved}
+              </span>
+            )}
+            <button type="button" disabled={!dirty || pending} onClick={() => setDraft(structuredClone(perms))} className={`${btn.outline} min-h-[42px] px-3.5 text-[14.5px]`}>
               <AIcon name="undo" />
-              {t.dz.reset}
+              {t.users.revert}
             </button>
             <button
               type="button"
-              disabled={pending}
+              disabled={pending || !dirty}
               onClick={() =>
                 start(async () => {
-                  await savePerms(draft);
-                  toast("ok", t.toast.permSaved);
-                  router.refresh();
+                  try {
+                    await savePerms(draft);
+                    toast("ok", t.toast.permSaved);
+                    router.refresh();
+                  } catch {
+                    toast("err", t.toast.fix);
+                  }
                 })
               }
               className={`${btn.primary} min-h-[42px] text-[14.5px]`}
             >
-              {t.users.savePerms}
+              <Busy busy={pending}>{t.users.savePerms}</Busy>
             </button>
           </div>
         )}

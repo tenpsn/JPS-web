@@ -16,7 +16,9 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
       categories={db.categories}
       users={users}
       initialQ={typeof sp.q === "string" ? sp.q : ""}
+      initialStatus={sp.status === "pub" || sp.status === "draft" ? sp.status : "all"}
       canEdit={can(user, "products", "edit")}
+      canPub={can(user, "products", "publish")}
       canDel={can(user, "products", "del")}
     />
   );

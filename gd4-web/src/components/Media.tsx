@@ -1,29 +1,27 @@
 import Image from "next/image";
 import type { Img } from "@/types/site";
 
+/** มีไฟล์รูปจริงแล้ว ไม่ใช่ค่าว่างหรือรูปตัวอย่าง */
+export const realImg = (img: Img | undefined): img is string => !!img && img !== "placeholder";
+
 /** แสดงรูปเต็มกรอบที่ครอบอยู่ ถ้ายังไม่มีรูปจริงจะแสดงกล่องลายทางแทน */
-export function Media({ img, alt, sizes = "(min-width: 1024px) 50vw, 100vw", label = true, dark = false, priority = false, fit = "cover" }: {
+export function Media({ img, alt, sizes = "(min-width: 1024px) 50vw, 100vw", label = true, priority = false, fit = "cover" }: {
   img: Img;
   alt: string;
   sizes?: string;
   label?: boolean;
-  /** วางบนพื้นสีกรมท่า */
-  dark?: boolean;
   priority?: boolean;
   /** contain แสดงรูปทั้งรูปโดยไม่ตัดขอบ ใช้กับรูปสินค้า */
   fit?: "cover" | "contain";
 }) {
-  if (img && img !== "placeholder") {
+  if (realImg(img)) {
     return <Image src={img} alt={alt} fill sizes={sizes} priority={priority} className={fit === "contain" ? "object-contain" : "object-cover"} />;
   }
   return (
     <div
       role="img"
       aria-label={alt}
-      className={`absolute inset-0 grid place-items-center p-3 text-center font-mono text-[13px] font-medium ${
-        dark ? "text-[#9fb4d8]" : "stripe text-ph-ink"
-      }`}
-      style={dark ? { background: "repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 10px,rgba(255,255,255,.02) 10px 20px)" } : undefined}
+      className="stripe absolute inset-0 grid place-items-center p-3 text-center font-mono text-[13px] font-medium text-ph-ink"
     >
       {label && img === "placeholder" ? alt : null}
     </div>

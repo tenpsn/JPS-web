@@ -67,7 +67,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
       <body>
         <ThemeSync />
         <LangProvider lang={lang}>
-          <Header menu={settings.menu} siteName={tx(settings.siteName, lang)} logo={settings.logo} logoDark={settings.logoDark} />
+          <Header menu={settings.menu} siteName={tx(settings.siteName, lang)} logo={settings.logo} logoDark={settings.logoDark} phone={settings.contact.phone} />
           <main id="main">{children}</main>
           <Footer settings={settings} lang={lang} />
           <BackToTop />

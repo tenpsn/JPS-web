@@ -10,6 +10,9 @@ export default async function ContentPage({ searchParams }: PageProps<"/admin/co
   const user = await requireUser("content");
   const sp = await searchParams;
   const db = await readDb();
+  // สินค้าที่ใช้แสดงตัวอย่างหน้ารายละเอียดสินค้า เลือกตัวที่มีรายละเอียดครบก่อน
+  const live = db.products.filter((p) => p.status === "pub");
+  const sample = live.find((p) => p.detail?.th && p.short?.th && live.some((x) => x.id !== p.id && x.category === p.category)) ?? live[0];
   return (
     <Editor
       mode="content"
@@ -17,6 +20,7 @@ export default async function ContentPage({ searchParams }: PageProps<"/admin/co
       hasDraft={!!db.draft}
       initialRev={db.draftRev}
       categories={db.categories}
+      sampleSku={sample?.sku.toLowerCase() ?? ""}
       initialPage={typeof sp.page === "string" ? sp.page : "home"}
       perms={{
         contentEdit: can(user, "content", "edit"),

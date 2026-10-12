@@ -8,7 +8,7 @@ import { MediaPicker } from "@/admin/MediaPicker";
 import { useAdmin } from "@/admin/context";
 import { fmtDate } from "@/admin/i18n";
 import { IMG_MAX, SHORT_MAX, validateProduct, type ProductErrors, type ProductInput } from "@/admin/productRules";
-import { btn, Confirm, FieldError, label, mediaSrcs, Modal, Pill, PubBar, RadioCard, Req, uploadFile, useToast, useUnsavedGuard } from "@/admin/ui";
+import { btn, Confirm, FieldError, label, mediaSrcs, Modal, PageHead, Pill, PubBar, RadioCard, Req, uploadFile, useToast, useUnsavedGuard } from "@/admin/ui";
 import type { Category, LText, Locale, ProductImage } from "@/types/site";
 import { deleteProducts, saveProduct } from "../../actions/products";
 import { CategoriesModal } from "./CategoriesModal";
@@ -164,7 +164,11 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
   const catName = categories.find((c) => c.id === f.category)?.name[lang] ?? "";
 
   const section = "card flex flex-col gap-4 p-[22px] pb-[22px]";
-  const h2 = "m-0 text-[17px] font-semibold";
+  const h2 = "m-0 flex items-center gap-2.5 text-[17px] font-semibold";
+  // เลขลำดับในวงกลมหน้าหัวข้อแต่ละส่วน แบบตัวอย่างหลังบ้าน ส่วนการเผยแพร่ใช้สีแดง
+  const num = (n: number, red?: boolean) => (
+    <span className={`grid size-7 flex-none place-items-center rounded-full font-mono text-[13px] font-semibold text-white ${red ? "bg-red-solid" : "bg-blue-solid"}`}>{n}</span>
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -183,32 +187,38 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
         }
       />
 
-      <div className="anim-up flex flex-col gap-2.5">
-        <Link href="/admin/products" className={`${btn.link} min-h-9 w-fit`}>
-          <AIcon name="arrowL" />
-          {t.form.back}
-        </Link>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="m-0 text-[clamp(22px,3vw,28px)] font-bold">{isNew ? t.form.addTitle : t.form.editTitle}</h1>
+      <PageHead
+        crumbs={[{ label: t.prod.title, href: "/admin/products" }, { label: isNew ? t.form.addTitle : f.sku || t.form.editTitle }]}
+        title={isNew ? t.form.addTitle : f.name[lang] || t.form.editTitle}
+        sub={
+          <span className="flex flex-wrap items-center gap-2.5">
             {f.status === "pub" ? <Pill tone="green">{t.prod.pub}</Pill> : <Pill tone="amber">{t.prod.draft}</Pill>}
+            <span>{isNew ? t.form.newNote : f.name[lang === "th" ? "en" : "th"]}</span>
             {dirty && (
               <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-amber [animation:a-fade_.3s_both]">
                 <span className="size-[7px] rounded-full bg-current" />
                 {t.c.unsaved}
               </span>
             )}
-          </div>
-          <span className="text-[14.5px] text-ink2">{isNew ? t.form.newNote : f.name[lang]}</span>
-        </div>
-      </div>
+          </span>
+        }
+        actions={
+          <Link href="/admin/products" className={btn.outline}>
+            <AIcon name="arrowL" />
+            {t.form.back}
+          </Link>
+        }
+      />
 
       <fieldset disabled={!canEdit} className="m-0 grid min-w-0 grid-cols-1 items-start gap-5 border-0 p-0 min-[1100px]:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-5">
           {/* ข้อมูลสินค้าแยกตามภาษา */}
           <section className="card anim-up [animation-delay:.05s]">
             <div className="px-[22px] pt-5">
-              <h2 className={h2}>{t.form.info}</h2>
+              <h2 className={h2}>
+                {num(1)}
+                {t.form.info}
+              </h2>
             </div>
             <div role="tablist" className="flex gap-1 border-b border-line px-3.5 pt-1.5">
               {(["th", "en"] as const).map((l) => (
@@ -295,7 +305,10 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
           {/* รูปภาพ */}
           <section className={`${section} anim-up [animation-delay:.1s]`}>
             <div className="flex items-center justify-between gap-3">
-              <h2 className={h2}>{t.form.images}</h2>
+              <h2 className={h2}>
+                {num(2)}
+                {t.form.images}
+              </h2>
               <span className="text-[13.5px] text-ink3">
                 {f.images.length}/{IMG_MAX} {lang === "th" ? "รูป" : "images"}
               </span>
@@ -354,7 +367,7 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
                           dragFrom.current = null;
                           setDragging(null);
                         }}
-                        className={`relative aspect-square cursor-grab overflow-hidden rounded-[10px] border-2 bg-cover bg-center transition-[opacity,border-color,box-shadow] [animation:a-pop_.35s_cubic-bezier(.34,1.56,.64,1)_both] hover:shadow-lift ${
+                        className={`relative aspect-square cursor-grab overflow-hidden rounded-[10px] border-2 bg-white bg-contain bg-center bg-no-repeat bg-origin-content p-2 transition-[opacity,border-color,box-shadow] [animation:a-pop_.35s_cubic-bezier(.34,1.56,.64,1)_both] hover:shadow-lift ${
                           isMain ? "border-red-solid" : "border-line"
                         } ${dragging === im.id ? "opacity-40" : ""}`}
                         style={{ backgroundImage: real ? `url(${im.src})` : "repeating-linear-gradient(135deg,var(--ph1) 0 6px,var(--ph2) 6px 12px)" }}
@@ -398,7 +411,10 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
 
         <div className="flex flex-col gap-5 min-[1100px]:sticky min-[1100px]:top-0">
           <section className="card anim-up flex flex-col gap-3 p-5 [animation-delay:.1s]" role="radiogroup" aria-label={t.form.publishing}>
-            <h2 className="m-0 text-base font-semibold">{t.form.publishing}</h2>
+            <h2 className={h2}>
+              {num(3, true)}
+              {t.form.publishing}
+            </h2>
             <RadioCard on={f.status === "pub"} onPick={() => set((x) => ({ ...x, status: "pub" }))} title={t.prod.pub} desc={t.form.pubDesc} disabled={!canPublish} />
             <RadioCard on={f.status === "draft"} onPick={() => set((x) => ({ ...x, status: "draft" }))} title={t.prod.draft} desc={t.form.draftDesc} />
             {meta?.updatedAt && (
@@ -414,7 +430,10 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
             )}
           </section>
           <section className="card anim-up flex flex-col gap-4 p-5 [animation-delay:.15s]">
-            <h2 className="m-0 text-base font-semibold">{t.form.org}</h2>
+            <h2 className={h2}>
+              {num(4)}
+              {t.form.org}
+            </h2>
             <label className="flex flex-col gap-2">
               <span className="flex items-center justify-between gap-2.5">
                 <span className={label}>

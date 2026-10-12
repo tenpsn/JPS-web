@@ -36,6 +36,7 @@ export function InviteForm({ token }: { token: string }) {
   return (
     <>
       <div className="flex flex-col gap-2">
+        <span className="h-1 w-11 rounded-sm bg-red-solid" />
         <h1 className="m-0 text-[28px] font-bold leading-[1.3]">{title}</h1>
         <p className="m-0 text-[15.5px] leading-[1.6] text-ink2">{t.set.rule}</p>
       </div>

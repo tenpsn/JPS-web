@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { IMG_MAX, validateProduct, type ProductErrors, type ProductInput } from "@/admin/productRules";
+import { IMG_MAX, toInput, validateProduct, type ProductErrors, type ProductInput } from "@/admin/productRules";
 import { same } from "@/lib/same";
 import { logActivity } from "@/server/activity";
 import { assertCan } from "@/server/auth";
@@ -73,6 +73,53 @@ export async function deleteProducts(ids: string[]): Promise<{ ok: true; count: 
   });
   refreshSite();
   return { ok: true, count };
+}
+
+/** เปลี่ยนสถานะหลายรายการพร้อมกัน สินค้าที่ข้อมูลยังไม่ครบจะไม่ถูกเผยแพร่ และนับกลับไปบอกผู้ใช้ */
+export async function setProductsStatus(ids: string[], status: "pub" | "draft"): Promise<{ ok: true; count: number; skipped: number }> {
+  const user = await assertCan("products", status === "pub" ? "publish" : "edit");
+  const set = new Set(ids.map((x) => String(x)));
+  const res = await mutate((d) => {
+    let count = 0;
+    let skipped = 0;
+    for (const p of d.products) {
+      if (!set.has(p.id) || p.status === status) continue;
+      if (status === "pub" && Object.keys(validateProduct(toInput(p), d.products)).length) {
+        skipped++;
+        continue;
+      }
+      p.status = status;
+      p.updatedAt = nowStr();
+      p.updatedBy = user.id;
+      logActivity(d, user.id, status === "pub" ? "published" : "edited", p.name);
+      count++;
+    }
+    return { count, skipped };
+  });
+  refreshSite();
+  return { ok: true, ...res };
+}
+
+/** ย้ายสินค้าหลายรายการไปหมวดเดียวกัน */
+export async function moveProducts(ids: string[], category: string): Promise<{ ok: boolean; count: number }> {
+  const user = await assertCan("products", "edit");
+  const set = new Set(ids.map((x) => String(x)));
+  const cat = String(category);
+  const count = await mutate((d) => {
+    if (!d.categories.some((c) => c.id === cat)) return -1;
+    let n = 0;
+    for (const p of d.products) {
+      if (!set.has(p.id) || p.category === cat) continue;
+      p.category = cat;
+      p.updatedAt = nowStr();
+      p.updatedBy = user.id;
+      logActivity(d, user.id, "edited", p.name);
+      n++;
+    }
+    return n;
+  });
+  refreshSite();
+  return { ok: count >= 0, count: Math.max(0, count) };
 }
 
 export type CategoryResult = { ok: true; categories: Category[] } | { ok: false; error: "errBoth" | "catInUse" };

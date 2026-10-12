@@ -7,19 +7,20 @@ import { logout } from "@/app/admin/actions/auth";
 import type { Area, PublicUser } from "@/server/types";
 import { type BrandInfo, BrandMark } from "./Brand";
 import { AIcon, type AIconName } from "./AIcon";
-import { avatarColor } from "./avatar";
+import { Avatar } from "./Avatar";
 import { useAdmin } from "./context";
 import { AdminLangSwitch, AdminThemeToggle } from "./controls";
 import { LiveRefresh } from "./LiveRefresh";
 import { Confirm, isDirty, PUBBAR_SLOT, ToastProvider } from "./ui";
 
-const NAV: { area: Area; href: string; icon: AIconName }[] = [
-  { area: "dashboard", href: "/admin", icon: "dash" },
-  { area: "products", href: "/admin/products", icon: "box" },
-  { area: "content", href: "/admin/content", icon: "page" },
-  { area: "design", href: "/admin/design", icon: "text" },
-  { area: "users", href: "/admin/users", icon: "users" },
-  { area: "settings", href: "/admin/settings", icon: "gear" },
+/** เมนูแบ่งเป็นกลุ่ม ภาพรวม เนื้อหา และระบบ */
+const NAV: { area: Area; href: string; icon: AIconName; group: "gOverview" | "gContent" | "gSystem" }[] = [
+  { area: "dashboard", href: "/admin", icon: "dash", group: "gOverview" },
+  { area: "products", href: "/admin/products", icon: "box", group: "gContent" },
+  { area: "content", href: "/admin/content", icon: "page", group: "gContent" },
+  { area: "design", href: "/admin/design", icon: "text", group: "gContent" },
+  { area: "users", href: "/admin/users", icon: "users", group: "gSystem" },
+  { area: "settings", href: "/admin/settings", icon: "gear", group: "gSystem" },
 ];
 
 const COLLAPSE_KEY = "admin-side-collapsed";
@@ -101,7 +102,7 @@ export function AdminShell({ user, areas, brand, children }: {
       {drawer && <div onClick={() => setDrawer(false)} className="absolute inset-0 z-[39] bg-[var(--overlay)] [animation:a-fade_.3s_both] md2:hidden" />}
 
       <aside
-        className={`absolute inset-y-0 left-0 z-40 flex w-[284px] flex-none flex-col overflow-hidden bg-side text-side-ink transition-[width,transform] duration-[350ms] ease-[cubic-bezier(.2,.7,.2,1)] md2:relative md2:w-[76px] md2:translate-x-0 md2:shadow-none ${
+        className={`absolute inset-y-0 left-0 z-40 flex w-[284px] flex-none flex-col overflow-hidden border-t-[3px] border-red-solid bg-side text-side-ink transition-[width,transform] duration-[350ms] ease-[cubic-bezier(.2,.7,.2,1)] md2:relative md2:w-[76px] md2:translate-x-0 md2:shadow-none ${
           collapsed ? "" : "xl2:w-[252px]"
         } ${drawer ? "translate-x-0 shadow-[0_20px_60px_rgba(0,0,0,.45)]" : "-translate-x-[105%]"}`}
       >
@@ -125,28 +126,46 @@ export function AdminShell({ user, areas, brand, children }: {
           {items.map((n, i) => {
             const on = active(n.href);
             const label = t.nav[n.area];
+            const head = i === 0 || items[i - 1].group !== n.group;
             return (
+              <span key={n.area} className="contents">
+              {head && (
+                <span className={`block px-3.5 pb-1 text-xs font-semibold tracking-[.04em] text-side-ink2 ${i ? "pt-3" : ""} md2:hidden ${collapsed ? "" : "xl2:block"}`}>
+                  {t.nav[n.group]}
+                </span>
+              )}
               <Link
-                key={n.area}
                 href={n.href}
                 title={label}
                 aria-current={on ? "page" : undefined}
                 style={drawer ? { animation: `a-up .45s cubic-bezier(.2,.7,.2,1) ${(0.08 + i * 0.05).toFixed(2)}s both` } : undefined}
-                className={`relative flex min-h-[46px] items-center gap-3 rounded-lg px-3.5 text-[15px] transition-colors duration-200 hover:text-white ${
-                  on ? "bg-white/10 font-semibold text-white" : "font-medium text-side-ink"
+                className={`relative flex min-h-[46px] items-center gap-3 rounded-full px-3.5 text-[15px] transition-colors duration-200 ${
+                  on ? "bg-white font-semibold text-[#0f3a80] hover:text-[#0f3a80]" : "font-medium text-side-ink hover:bg-white/[.08] hover:text-white"
                 }`}
               >
-                <span
-                  className={`absolute inset-y-2.5 left-0 w-[3px] rounded-r-[3px] bg-brand-red transition-transform duration-300 ${on ? "scale-y-100" : "scale-y-0"}`}
-                />
-                <AIcon name={n.icon} size={20} />
+                <span className={on ? "grid text-red-solid" : "grid"}>
+                  <AIcon name={n.icon} size={20} />
+                </span>
                 <span className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap ${labelCls}`}>{label}</span>
               </Link>
+              </span>
             );
           })}
         </nav>
 
         <div className="flex flex-col gap-1 border-t border-white/[.08] p-3">
+          <Link
+            href="/admin/profile"
+            title={lang === "th" ? "โปรไฟล์ของฉัน" : "My profile"}
+            aria-current={active("/admin/profile") ? "page" : undefined}
+            className={`flex min-h-12 items-center gap-3 rounded-full px-1.5 text-side-ink hover:bg-white/[.06] hover:text-white ${active("/admin/profile") ? "bg-white/[.1]" : ""}`}
+          >
+            <Avatar u={user} lang={lang} className="size-[38px] text-[13px]" />
+            <span className={`flex min-w-0 flex-col leading-[1.25] md2:hidden ${collapsed ? "" : "xl2:flex"}`}>
+              <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white">{user.name[lang]}</strong>
+              <span className="text-[12.5px] text-side-ink2">{t.roles[user.role]}</span>
+            </span>
+          </Link>
           <button
             type="button"
             onClick={() => setCollapsedPref(!collapsed)}
@@ -172,7 +191,7 @@ export function AdminShell({ user, areas, brand, children }: {
       </aside>
 
       <div className="flex h-full min-w-0 flex-1 flex-col">
-        <header className="relative z-[5] flex h-16 flex-none items-center gap-2.5 border-b border-line bg-surface px-3 md2:px-6">
+        <header className="relative z-[5] flex h-16 flex-none items-center gap-2.5 border-b border-line bg-surface/90 px-3 backdrop-blur-md md2:px-6">
           <button
             type="button"
             onClick={() => setDrawer(true)}
@@ -211,18 +230,16 @@ export function AdminShell({ user, areas, brand, children }: {
           <span className="flex-1" />
           <AdminLangSwitch />
           <AdminThemeToggle />
-          <Link
-            href="/admin/settings"
-            className="flex items-center gap-2.5 rounded-full p-[3px] text-left text-ink hover:text-ink"
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t.nav.viewSite}
+            className="inline-flex min-h-[42px] items-center gap-2 rounded-lg border border-line bg-surface px-3 text-[14.5px] font-semibold text-ink hover:border-blue-solid hover:text-blue"
           >
-            <span className="grid size-[38px] flex-none place-items-center rounded-full text-[13px] font-bold text-white" style={{ background: avatarColor(user.id) }}>
-              {user.ini[lang]}
-            </span>
-            <span className="hidden flex-col pr-1.5 leading-[1.25] xl2:flex">
-              <strong className="text-sm font-semibold">{user.name[lang]}</strong>
-              <span className="text-[12.5px] text-ink2">{t.roles[user.role]}</span>
-            </span>
-          </Link>
+            <AIcon name="external" />
+            <span className="hidden xl2:inline">{t.nav.viewSite}</span>
+          </a>
         </header>
 
         <div id={PUBBAR_SLOT} className="contents" />

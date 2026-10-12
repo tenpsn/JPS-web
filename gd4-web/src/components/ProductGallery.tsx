@@ -22,7 +22,8 @@ export function ProductGallery({ images, start = 0, noImg }: { images: GalleryIm
   const many = images.length > 1;
   const go = (n: number) => setI((n + images.length) % images.length);
 
-  const frame = "relative aspect-[4/3] overflow-hidden rounded-img border border-line";
+  // กรอบรูปแบบการ์ดขาวมุมโค้งมีเงา เหมือนรูปในส่วนหัวของหน้าอื่น
+  const frame = "relative aspect-[4/3] overflow-hidden rounded-[20px] border border-line shadow-card";
   if (!images.length) {
     return (
       <div className={`${frame} bg-bg2`}>

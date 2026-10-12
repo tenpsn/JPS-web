@@ -4,7 +4,7 @@ import { mutate } from "./store";
 import type { DB } from "./types";
 
 /** ข้อมูลทุกส่วนที่อาจอ้างถึงไฟล์อัปโหลด รวมถึงฉบับร่างที่ยังไม่เผยแพร่ */
-export const usedText = (db: DB) => JSON.stringify([db.pages, db.products, db.categories, db.settings, db.design, db.draft]);
+export const usedText = (db: DB) => JSON.stringify([db.pages, db.products, db.categories, db.settings, db.design, db.draft, db.users.map((u) => u.avatar)]);
 
 const srcsIn = (text: string) => new Set(text.match(/\/media\/[0-9a-f-]{36}\.[a-z0-9]+/g) ?? []);
 

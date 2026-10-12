@@ -2,10 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/server/activity";
-import { assertCan, getCurrentUser, renewSession } from "@/server/auth";
+import { assertCan } from "@/server/auth";
 import { mutateAndPrune } from "@/server/cleanup";
-import { hashPassword, verifyPassword } from "@/server/password";
-import { mutate, readDb } from "@/server/store";
+import { mutate } from "@/server/store";
 import type { Img, LText } from "@/types/site";
 
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
@@ -47,29 +46,4 @@ export async function saveSeo(target: string, input: { title: LText; description
   });
   refresh();
   return { ok };
-}
-
-/* ความปลอดภัยของบัญชี ผู้ใช้ทุกคนจัดการบัญชีของตัวเองได้ */
-
-export type PwErrors = Partial<Record<"cur" | "nw" | "conf", "errCur" | "errNw" | "errConf">>;
-
-export async function changePassword(cur: string, nw: string, conf: string): Promise<{ ok: boolean; errors?: PwErrors }> {
-  const me = await getCurrentUser();
-  if (!me) throw new Error("Forbidden");
-  const u = (await readDb()).users.find((x) => x.id === me.id)!;
-  const errors: PwErrors = {};
-  if (!cur || !verifyPassword(cur, u.passwordHash)) errors.cur = "errCur";
-  if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(nw)) errors.nw = "errNw";
-  if (nw !== conf) errors.conf = "errConf";
-  if (Object.keys(errors).length) return { ok: false, errors };
-  const ver = await mutate((db) => {
-    const u = db.users.find((x) => x.id === me.id)!;
-    u.passwordHash = hashPassword(nw);
-    // เครื่องอื่นที่เข้าระบบอยู่จะหลุดออก ส่วนเครื่องนี้ได้คุกกี้ใหม่ด้านล่าง
-    u.sessionVer = (u.sessionVer ?? 0) + 1;
-    logActivity(db, me.id, { th: "เปลี่ยนรหัสผ่าน", en: "changed password" }, { th: "บัญชีตัวเอง", en: "own account" });
-    return u.sessionVer;
-  });
-  await renewSession(me.id, ver);
-  return { ok: true };
 }

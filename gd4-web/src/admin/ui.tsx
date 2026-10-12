@@ -1,25 +1,72 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { AIcon, type AIconName } from "./AIcon";
 import { useAdmin } from "./context";
 
-/* รูปแบบปุ่ม */
-export const btn = {
-  primary:
-    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-blue-solid px-[18px] text-[15px] font-semibold text-white transition-[background-color,transform] duration-200 hover:bg-blue-h hover:text-white active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-60",
-  outline:
-    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 text-[15px] font-medium text-ink transition-[border-color,color,transform] duration-200 hover:border-blue-solid hover:text-blue active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-60",
-  danger:
-    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-red-solid px-[18px] text-[15px] font-semibold text-white active:scale-[.98] disabled:opacity-60",
-  icon: "grid size-[38px] cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-ink2 transition-colors hover:bg-soft hover:text-blue",
-  iconDanger: "grid size-[38px] cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-ink2 transition-colors hover:bg-red-soft hover:text-red",
-  link: "inline-flex cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 text-[14.5px] font-medium text-blue hover:text-red",
-};
+/* รูปแบบปุ่มอยู่ในไฟล์ cls.ts เพื่อให้หน้าฝั่งเซิร์ฟเวอร์ใช้ได้ด้วย */
+export { btn, iconTile } from "./cls";
+import { btn } from "./cls";
 
 export const label = "text-sm font-semibold";
-export const pageTitle = "m-0 text-[clamp(24px,3vw,30px)] font-bold";
+
+/** แถบหัวของหน้า แบบเดียวกับส่วนหัวหน้าย่อยของหน้าเว็บ มีลายตาราง เส้นแดงเหนือหัวข้อ และปุ่มด้านขวา */
+export function PageHead({ title, sub, crumbs, actions }: {
+  title: React.ReactNode;
+  sub?: React.ReactNode;
+  crumbs?: { label: string; href?: string }[];
+  actions?: React.ReactNode;
+}) {
+  return (
+    <section className="anim-up relative overflow-hidden rounded-2xl border border-line bg-surface">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-70 [background-image:linear-gradient(var(--line)_1px,transparent_1px),linear-gradient(90deg,var(--line)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:linear-gradient(90deg,transparent,#000_65%)]"
+      />
+      <div className="relative flex flex-wrap items-end justify-between gap-4 px-5 py-5 md2:px-7 md2:py-6">
+        <div className="flex min-w-0 flex-col gap-2">
+          {!!crumbs?.length && (
+            <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-sm text-ink2">
+              {crumbs.map((c, i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  {i > 0 && <AIcon name="chevR" size={14} />}
+                  {c.href ? (
+                    <Link href={c.href} className="text-ink2 hover:text-blue">
+                      {c.label}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-ink" aria-current="page">
+                      {c.label}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
+          <span className="h-1 w-11 rounded-sm bg-red-solid" />
+          <h1 className="m-0 text-[clamp(24px,3vw,30px)] font-bold leading-[1.25] [overflow-wrap:anywhere]">{title}</h1>
+          {sub && <p className="m-0 text-[15px] text-ink2">{sub}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap gap-2.5">{actions}</div>}
+      </div>
+    </section>
+  );
+}
+
+
+/** ข้อความบนปุ่มระหว่างรอผลบันทึก มีวงหมุนและคำว่ากำลังบันทึก พอเสร็จแล้วกลับเป็นข้อความเดิม */
+export function Busy({ busy, children }: { busy: boolean; children: React.ReactNode }) {
+  const { t } = useAdmin();
+  if (!busy) return <>{children}</>;
+  return (
+    <>
+      <span aria-hidden="true" className="size-4 flex-none animate-[a-spin_.8s_linear_infinite] rounded-full border-2 border-current border-t-transparent" />
+      <span role="status">{t.c.saving}</span>
+    </>
+  );
+}
 
 export function FieldError({ id, text }: { id?: string; text?: string | false | null }) {
   if (!text) return null;
@@ -189,8 +236,9 @@ export function Confirm({ open, onClose, onOk, title, text, items, okLabel, canc
   const { t } = useAdmin();
   return (
     <Modal open={open} onClose={onClose} width={440} labelledBy="cf-title">
-      <div className="flex flex-col gap-4 p-7">
-        <span className={`grid size-[52px] place-items-center rounded-full ${danger ? "bg-red-soft text-red" : "bg-amber-soft text-amber"}`}>
+      {/* เส้นบนสีแดงสำหรับการลบ สีเหลืองสำหรับคำเตือนอื่น แบบเดียวกับเส้นแดงของหน้าเว็บ */}
+      <div className={`flex flex-col gap-4 border-t-4 p-7 ${danger ? "border-red-solid" : "border-amber"}`}>
+        <span className={`grid size-[52px] place-items-center rounded-xl ${danger ? "bg-red-soft text-red" : "bg-amber-soft text-amber"}`}>
           <AIcon name={icon} size={22} />
         </span>
         <div className="flex flex-col gap-2">
@@ -337,7 +385,7 @@ export function useUnsavedGuard(dirty: boolean) {
 /* ตัวช่วยอัปโหลดไฟล์ */
 export type Uploaded = { src: string; name: string; size: number };
 
-export async function uploadFile(file: File, kind: "image" | "icon" | "font"): Promise<Uploaded | { error: string }> {
+export async function uploadFile(file: File, kind: "image" | "icon" | "font" | "avatar"): Promise<Uploaded | { error: string }> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("kind", kind);
@@ -373,21 +421,22 @@ export function Pager({ page, total, onPage, per = PAGE_SIZE }: { page: number; 
   const from = Math.max(1, Math.min(cur, pages - 2));
   const nums = Array.from({ length: Math.min(3, pages) }, (_, i) => from + i);
   const edge =
-    "inline-flex h-9 min-w-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-1.5 sm:h-[42px] sm:min-w-[42px] sm:px-2.5 text-[14px] font-semibold text-ink transition-colors hover:border-blue-solid hover:text-blue disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink";
+    "inline-flex h-9 min-w-9 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-1.5 @2xl:h-[42px] @2xl:min-w-[42px] @2xl:px-2.5 text-[14px] font-semibold text-ink transition-colors hover:border-blue-solid hover:text-blue disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink";
+  // ขนาดและคำบนปุ่มดูจากความกว้างของกล่องที่ตัวเปลี่ยนหน้าอยู่ ไม่ใช่ความกว้างจอ กล่องแคบจะเหลือแค่ไอคอน
   const go = (p: number) => onPage(Math.min(Math.max(p, 1), pages));
   return (
-    <nav aria-label={t.pg.label} className="flex flex-wrap items-center justify-between gap-3">
+    <nav aria-label={t.pg.label} className="@container flex flex-wrap items-center justify-between gap-3">
       <span className="text-sm text-ink2">
         {t.pg.showing.replace("{from}", String((cur - 1) * per + 1)).replace("{to}", String(Math.min(cur * per, total))).replace("{total}", String(total))}
       </span>
-      <div className="flex flex-wrap gap-1 sm:gap-1.5">
+      <div className="flex flex-wrap gap-1 @2xl:gap-1.5">
         <button type="button" onClick={() => go(1)} disabled={cur === 1} aria-label={t.pg.first} title={t.pg.first} className={edge}>
           <AIcon name="chevsL" />
-          <span className="hidden sm:inline">{t.pg.first}</span>
+          <span className="hidden @2xl:inline">{t.pg.first}</span>
         </button>
         <button type="button" onClick={() => go(cur - 1)} disabled={cur === 1} aria-label={t.pg.prev} title={t.pg.prev} className={edge}>
           <AIcon name="chevL" />
-          <span className="hidden sm:inline">{t.pg.prev}</span>
+          <span className="hidden @2xl:inline">{t.pg.prev}</span>
         </button>
         {nums.map((n) => (
           <button
@@ -395,7 +444,7 @@ export function Pager({ page, total, onPage, per = PAGE_SIZE }: { page: number; 
             type="button"
             onClick={() => go(n)}
             aria-current={n === cur ? "page" : undefined}
-            className={`h-9 min-w-9 cursor-pointer rounded-lg border text-[14px] font-semibold transition-colors sm:h-[42px] sm:min-w-[42px] sm:text-[14.5px] ${
+            className={`h-9 min-w-9 cursor-pointer rounded-lg border text-[14px] font-semibold transition-colors @2xl:h-[42px] @2xl:min-w-[42px] @2xl:text-[14.5px] ${
               n === cur ? "border-blue-solid bg-blue-solid text-white" : "border-line bg-surface text-ink hover:border-blue-solid hover:text-blue"
             }`}
           >
@@ -403,11 +452,11 @@ export function Pager({ page, total, onPage, per = PAGE_SIZE }: { page: number; 
           </button>
         ))}
         <button type="button" onClick={() => go(cur + 1)} disabled={cur === pages} aria-label={t.pg.next} title={t.pg.next} className={edge}>
-          <span className="hidden sm:inline">{t.pg.next}</span>
+          <span className="hidden @2xl:inline">{t.pg.next}</span>
           <AIcon name="chevR" />
         </button>
         <button type="button" onClick={() => go(pages)} disabled={cur === pages} aria-label={t.pg.last} title={t.pg.last} className={edge}>
-          <span className="hidden sm:inline">{t.pg.last}</span>
+          <span className="hidden @2xl:inline">{t.pg.last}</span>
           <AIcon name="chevsR" />
         </button>
       </div>

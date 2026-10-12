@@ -6,19 +6,20 @@ import { useRef, useState, useTransition } from "react";
 import { AIcon, type AIconName } from "@/admin/AIcon";
 import { useAdmin } from "@/admin/context";
 import { MediaPicker } from "@/admin/MediaPicker";
-import { btn, FieldError, label, pageTitle, Req, SITE_HOST, uploadFile, useToast } from "@/admin/ui";
+import { btn, Busy, FieldError, label, PageHead, Req, SITE_HOST, uploadFile, useToast } from "@/admin/ui";
 import type { Design, Img, Locale, Page, SiteSettings } from "@/types/site";
-import { changePassword, saveGeneral, saveSeo, type PwErrors } from "../../actions/settings";
+import { saveGeneral, saveSeo } from "../../actions/settings";
 
-type Tab = "general" | "typo" | "theme" | "seo" | "security";
+type Tab = "general" | "typo" | "theme" | "seo";
 const TABS: [Tab, AIconName][] = [
-  ["general", "gear"], ["typo", "text"], ["theme", "sun"], ["seo", "search"], ["security", "lock"],
+  ["general", "gear"], ["typo", "text"], ["theme", "sun"], ["seo", "search"],
 ];
 
 type PageLite = Pick<Page, "id" | "title" | "slug" | "seo">;
 
 export function Settings(props: {
-  full: boolean;
+  /** แท็บที่เปิดก่อน มาจากลิงก์ เช่น ?tab=seo */
+  initialTab?: string;
   canEdit: boolean;
   canDesign: boolean;
   settings: SiteSettings;
@@ -26,13 +27,14 @@ export function Settings(props: {
   design: Design;
 }) {
   const { t } = useAdmin();
-  const tabs = props.full ? TABS : TABS.filter(([k]) => k === "security");
-  const [tab, setTab] = useState<Tab>(props.full ? "general" : "security");
+  const tabs = TABS;
+  const [tab, setTab] = useState<Tab>(() => tabs.find(([k]) => k === props.initialTab)?.[0] ?? "general");
 
   return (
     <div className="flex flex-col gap-[18px]">
-      <h1 className={`${pageTitle} anim-up`}>{t.set.title}</h1>
-      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-[10px] border border-line bg-surface p-1" role="tablist">
+      <PageHead title={t.set.title} />
+      <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[230px_minmax(0,1fr)]">
+      <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 lg:sticky lg:top-2 lg:w-full lg:flex-col lg:rounded-2xl lg:p-2" role="tablist">
         {tabs.map(([k, icon]) => (
           <button
             key={k}
@@ -40,8 +42,8 @@ export function Settings(props: {
             role="tab"
             aria-selected={tab === k}
             onClick={() => setTab(k)}
-            className={`inline-flex min-h-[42px] flex-none cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border-0 px-3.5 text-[14.5px] font-semibold transition-colors ${
-              tab === k ? "bg-blue-solid text-white" : "bg-transparent text-ink2"
+            className={`inline-flex min-h-[42px] flex-none cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border-0 px-4 text-[14.5px] font-semibold transition-colors lg:min-h-11 lg:rounded-[10px] lg:px-3 ${
+              tab === k ? "bg-blue-solid text-white" : "bg-transparent text-ink2 hover:bg-soft hover:text-blue"
             }`}
           >
             <AIcon name={icon} />
@@ -49,13 +51,13 @@ export function Settings(props: {
           </button>
         ))}
       </div>
-      <fieldset disabled={!props.canEdit && tab !== "security"} className="m-0 flex min-w-0 flex-col gap-[18px] border-0 p-0">
+      <fieldset disabled={!props.canEdit} className="m-0 flex min-w-0 flex-col gap-[18px] border-0 p-0">
         {tab === "general" && <General settings={props.settings} />}
         {tab === "typo" && <TypoSummary design={props.design} canDesign={props.canDesign} />}
         {tab === "theme" && <ThemeSummary design={props.design} canDesign={props.canDesign} />}
         {tab === "seo" && <Seo settings={props.settings} pages={props.pages} />}
-        {tab === "security" && <Security />}
       </fieldset>
+      </div>
     </div>
   );
 }
@@ -140,7 +142,7 @@ function SaveRow({ onSave, pending, dirty }: { onSave: () => void; pending: bool
         </span>
       )}
       <button type="button" onClick={onSave} disabled={pending || !dirty} className={btn.primary}>
-        {t.set.saveSet}
+        <Busy busy={pending}>{t.set.saveSet}</Busy>
       </button>
     </div>
   );
@@ -486,96 +488,5 @@ function Seo({ settings, pages }: { settings: SiteSettings; pages: PageLite[] })
       />
       <MediaPicker open={picker} current={v.image} onPick={(image) => set({ image })} onClose={() => setPicker(false)} />
     </>
-  );
-}
-
-function strength(pw: string) {
-  let s = 0;
-  if (pw.length >= 8) s++;
-  if (pw.length >= 12) s++;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
-  if (/\d/.test(pw)) s++;
-  if (/[^A-Za-z0-9]/.test(pw)) s++;
-  return Math.min(4, s);
-}
-
-function Security() {
-  const { t } = useAdmin();
-  const toast = useToast();
-  const [pw, setPw] = useState({ cur: "", nw: "", conf: "" });
-  const [show, setShow] = useState(false);
-  const [errs, setErrs] = useState<PwErrors>({});
-  const [pending, start] = useTransition();
-
-  const s = strength(pw.nw);
-  const segTone = ["bg-red-solid", "bg-red-solid", "bg-amber", "bg-green-solid", "bg-green-solid"][s];
-  const inkTone = ["text-red", "text-red", "text-amber", "text-green", "text-green"][s];
-  const field = (k: keyof typeof pw, ac: string) => (
-    <input
-      type={show ? "text" : "password"}
-      value={pw[k]}
-      onChange={(e) => (setPw({ ...pw, [k]: e.target.value }), setErrs({ ...errs, [k]: undefined }))}
-      autoComplete={ac}
-      aria-invalid={!!errs[k]}
-      className="field min-h-11"
-    />
-  );
-
-  return (
-    <div className="max-w-[620px] [animation:a-up_.4s_both]">
-      <section className="card flex flex-col gap-4 px-[22px] pb-[22px] pt-5">
-        <h2 className="m-0 flex items-center gap-2 text-[17px] font-semibold">
-          <AIcon name="lock" />
-          {t.set.pw}
-        </h2>
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>{t.set.cur}</span>
-          {field("cur", "current-password")}
-          <FieldError text={errs.cur && t.set[errs.cur]} />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>{t.set.nw}</span>
-          <span className="relative block">
-            {field("nw", "new-password")}
-            <button type="button" onClick={() => setShow((x) => !x)} aria-label={show ? t.login.hidePw : t.login.showPw} className="absolute right-0.5 top-0 grid size-11 cursor-pointer place-items-center border-0 bg-transparent text-ink2">
-              <AIcon name={show ? "eyeOff" : "eye"} />
-            </button>
-          </span>
-          {pw.nw && (
-            <span className="flex items-center gap-2.5">
-              <span className="grid flex-1 grid-cols-4 gap-1">
-                {[1, 2, 3, 4].map((i) => (
-                  <span key={i} className={`h-[5px] rounded-[3px] transition-colors ${i <= s ? segTone : "bg-line"}`} />
-                ))}
-              </span>
-              <span className={`text-[12.5px] font-semibold ${inkTone}`}>{t.set.strength[s]}</span>
-            </span>
-          )}
-          <FieldError text={errs.nw && t.set[errs.nw]} />
-          <span className="text-[13px] text-ink3">{t.set.rule}</span>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className={label}>{t.set.conf}</span>
-          {field("conf", "new-password")}
-          <FieldError text={errs.conf && t.set[errs.conf]} />
-        </label>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            start(async () => {
-              const r = await changePassword(pw.cur, pw.nw, pw.conf);
-              if (!r.ok) return setErrs(r.errors ?? {});
-              setPw({ cur: "", nw: "", conf: "" });
-              setErrs({});
-              toast("ok", t.toast.pwSaved);
-            })
-          }
-          className={`${btn.primary} min-h-[46px] w-fit px-5`}
-        >
-          {t.set.updatePw}
-        </button>
-      </section>
-    </div>
   );
 }

@@ -12,7 +12,7 @@ const items = <T extends object>(list: T[]) => list.map((x) => ({ id: id("i"), .
 const ctaQuote = (): Section => ({
   id: id("s"),
   type: "cta",
-  bg: "navy",
+  bg: "white",
   heading: L("ต้องการใบเสนอราคาหรือนัดสาธิต?", "Need a quote or a demo?"),
   sub: L("ทีมขายตอบกลับภายใน 1 วันทำการ", "Our sales team replies within one business day"),
   btnLabel: L("ขอใบเสนอราคา", "Request a quote"),
@@ -20,6 +20,20 @@ const ctaQuote = (): Section => ({
   btn2Label: L("โทร 02-123-4567", "Call 02-123-4567"),
   btn2Url: "tel:021234567",
 });
+
+export const FAQ_HELP = L("ถ้าไม่เจอคำตอบที่ต้องการ ติดต่อทีมงานได้เลย", "Can’t find the answer you need? Talk to our team.");
+export const FAQ_BTN = { btnLabel: L("ติดต่อฝ่ายขาย", "Contact sales"), btnUrl: "/contact" };
+export const CATALOG_HELP = {
+  helpTitle: L("ไม่แน่ใจว่าต้องใช้รุ่นไหน", "Not sure which model you need?"),
+  helpDesc: L("บอกกำลังผลิตและรูปแบบยา ทีมงานช่วยเลือกให้", "Tell us your output and dosage form, and we’ll help you choose."),
+  helpBtn: L("ปรึกษาฟรี", "Free advice"),
+};
+export const CONTACT_PATHS = () =>
+  items([
+    { icon: "box" as const, title: L("สอบถามสินค้า", "Product enquiries"), desc: L("เลือกรุ่น เปรียบเทียบเครื่อง หรือนัดดูเครื่องจริง", "Choose a model, compare machines or book a demo"), btnLabel: L("ติดต่อฝ่ายขาย", "Contact sales"), btnUrl: "#reach" },
+    { icon: "wrench" as const, title: L("แจ้งซ่อมและบริการ", "Repairs and service"), desc: L("เครื่องมีปัญหา ขออะไหล่ หรือนัดซ่อมบำรุง", "Report a fault, order parts or book maintenance"), btnLabel: L("ไปหน้าบริการ", "Go to service"), btnUrl: "/service" },
+    { icon: "search" as const, title: L("ดูสินค้าทั้งหมด", "Browse all products"), desc: L("เครื่องจักรทุกหมวด พร้อมรายละเอียด", "Every machine category, with details"), btnLabel: L("ไปหน้าสินค้า", "Go to products"), btnUrl: "/products" },
+  ]);
 
 const faqItems = items([
   { q: L("ระยะเวลารับประกันกี่ปี?", "How long is the warranty?"), a: L("สินค้าทุกรายการรับประกัน 2 ปี ครอบคลุมอะไหล่และค่าแรง", "Every product has a 2-year warranty covering parts and labor.") },
@@ -91,6 +105,11 @@ export const SETTINGS: SiteSettings = {
     { id: "so3", platform: "youtube", url: "https://youtube.com/@gd4medical" },
     { id: "so4", platform: "instagram", url: "https://instagram.com/gdfourmedical" },
   ],
+  productTiles: [
+    { id: "pt1", icon: "factory", label: L("ติดตั้งถึงโรงงาน", "On-site installation") },
+    { id: "pt2", icon: "users", label: L("อบรมการใช้งาน", "Operator training") },
+    { id: "pt3", icon: "wrench", label: L("บริการหลังการขาย", "After-sales service") },
+  ],
   footer: {
     body: L("ผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร จัดหา ติดตั้ง และดูแลตลอดอายุการใช้งาน", "End-to-end medical equipment distributor: sourcing, installation and lifetime support."),
     copyright: L("© 2569 บริษัท จีดีโฟร์ เมดิคอล จำกัด สงวนลิขสิทธิ์", "© 2026 GD4 Medical Co., Ltd. All rights reserved."),
@@ -108,7 +127,7 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "hero",
-        bg: "navy",
+        bg: "gray",
         autoplay: 6,
         items: items([
           { title: L("เครื่องมือแพทย์มาตรฐานสากล พร้อมทีมดูแลที่คุณวางใจได้", "Certified medical equipment, backed by a team you can rely on"), sub: L("จัดหา ติดตั้ง และดูแลเครื่องมือแพทย์ให้โรงพยาบาลและคลินิกทั่วประเทศ", "Sourcing, installation and lifetime support for hospitals and clinics nationwide"), img: "placeholder", btnLabel: L("ดูสินค้าทั้งหมด", "View all products"), btnUrl: "/products" },
@@ -117,10 +136,11 @@ export const PAGES: Page[] = [
           { title: L("วิศวกรพร้อมดูแลเครื่องของคุณทั่วประเทศ", "Engineers nationwide"), sub: L("ศูนย์บริการ 3 แห่ง ครอบคลุม 77 จังหวัด", "Three service centers covering all 77 provinces"), img: "placeholder", btnLabel: L("ดูสินค้าทั้งหมด", "View all products"), btnUrl: "/products" },
         ]),
       },
+      { id: id("s"), type: "categories", bg: "white", heading: L("เลือกตามประเภทเครื่องจักร", "Browse by machine type"), sub: L("ครอบคลุมทุกขั้นตอนของสายการผลิตยา", "Covering every step of pharmaceutical production") },
       {
         id: id("s"),
         type: "cards",
-        bg: "white",
+        bg: "gray",
         heading: L("ทำไมโรงพยาบาลเลือก GD4", "Why hospitals choose GD4"),
         sub: L("ดูแลตั้งแต่การเลือกเครื่องไปจนถึงวันที่ต้องเปลี่ยนเครื่องใหม่", "From choosing equipment to replacing it years later"),
         items: items([
@@ -133,7 +153,7 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "stats",
-        bg: "blue",
+        bg: "navy",
         heading: L("GD4 ในตัวเลข", "GD4 in numbers"),
         items: items([
           { value: L("2009", "2009"), label: L("ปีที่ก่อตั้งบริษัท", "Year founded") },
@@ -163,7 +183,7 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "pageHeader",
-        bg: "navy",
+        bg: "gray",
         heading: L("เกี่ยวกับเรา", "About us"),
         sub: L("GD4 Medical ก่อตั้งในปี 2552 เป็นผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร ดูแลตั้งแต่การจัดหา ติดตั้ง อบรม ไปจนถึงบริการหลังการขายตลอดอายุการใช้งาน", "Founded in 2009, GD4 Medical is an end-to-end medical equipment distributor covering sourcing, installation, training and after-sales service for the full life of each device."),
       },
@@ -244,26 +264,24 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "pageHeader",
-        bg: "navy",
+        bg: "gray",
         heading: L("สินค้าของเรา", "Our products"),
         sub: L("เครื่องมือแพทย์กว่า 850 รายการ ครอบคลุมหอผู้ป่วยวิกฤต ห้องผ่าตัด ห้องปฏิบัติการ และงานกายภาพบำบัด", "Over 850 devices for intensive care, operating rooms, laboratories and rehabilitation."),
       },
-      { id: id("s"), type: "products", bg: "white", heading: L("สินค้าของเรา", "Our products"), sub: E, category: "all", count: 0, catalog: true },
+      { id: id("s"), type: "products", bg: "white", heading: L("สินค้าของเรา", "Our products"), sub: E, category: "all", count: 0, catalog: true, ...CATALOG_HELP },
       {
         id: id("s"),
         type: "table",
         bg: "gray",
         heading: L("บริการที่มาพร้อมทุกการสั่งซื้อ", "Included with every order"),
-        h1: L("บริการ", "Service"),
-        h2: L("รายละเอียด", "Details"),
         items: items([
-          { c1: L("ติดตั้ง", "Installation"), c2: L("โดยวิศวกรชีวการแพทย์ ไม่มีค่าใช้จ่าย", "By biomedical engineers, free of charge") },
-          { c1: L("อบรมการใช้งาน", "Training"), c2: L("ที่หน้างาน พร้อมคู่มือภาษาไทย", "On site, with Thai manuals") },
-          { c1: L("รับประกัน", "Warranty"), c2: L("2 ปี ทั้งอะไหล่และค่าแรง", "2 years, parts and labor") },
-          { c1: L("สอบเทียบ", "Calibration"), c2: L("ปีละ 1 ครั้งตลอดระยะประกัน", "Yearly during the warranty") },
+          { icon: "factory" as const, c1: L("ติดตั้ง", "Installation"), c2: L("โดยวิศวกรชีวการแพทย์ ไม่มีค่าใช้จ่าย", "By biomedical engineers, free of charge") },
+          { icon: "users" as const, c1: L("อบรมการใช้งาน", "Training"), c2: L("ที่หน้างาน พร้อมคู่มือภาษาไทย", "On site, with Thai manuals") },
+          { icon: "shield" as const, c1: L("รับประกัน", "Warranty"), c2: L("2 ปี ทั้งอะไหล่และค่าแรง", "2 years, parts and labor") },
+          { icon: "wrench" as const, c1: L("สอบเทียบ", "Calibration"), c2: L("ปีละ 1 ครั้งตลอดระยะประกัน", "Yearly during the warranty") },
         ]),
       },
-      { id: id("s"), type: "faq", bg: "white", heading: L("คำถามที่พบบ่อย", "Frequently asked questions"), items: faqItems },
+      { id: id("s"), type: "faq", bg: "white", heading: L("คำถามที่พบบ่อย", "Frequently asked questions"), help: FAQ_HELP, ...FAQ_BTN, items: faqItems },
     ],
   },
   {
@@ -276,8 +294,9 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "pageHeader",
-        bg: "navy",
+        bg: "gray",
         heading: L("ดูแลเครื่องของคุณตลอดอายุการใช้งาน", "Support for the full life of your equipment"),
+        side: "contact",
         sub: L("ศูนย์บริการ 3 แห่ง วิศวกรกว่า 40 คน พร้อมแจ้งซ่อมได้ 24 ชั่วโมง", "Three service centers, 40+ engineers, repairs requested 24/7"),
       },
       {
@@ -303,11 +322,11 @@ export const PAGES: Page[] = [
         videoUrl: "",
         cover: "placeholder",
       },
-      { id: id("s"), type: "faq", bg: "white", anchor: "faq", heading: L("คำถามที่พบบ่อย", "Frequently asked questions"), items: faqItems },
+      { id: id("s"), type: "faq", bg: "white", anchor: "faq", heading: L("คำถามที่พบบ่อย", "Frequently asked questions"), help: FAQ_HELP, ...FAQ_BTN, items: faqItems },
       {
         id: id("s"),
         type: "cta",
-        bg: "navy",
+        bg: "white",
         heading: L("เครื่องมีปัญหา? แจ้งซ่อมได้ตลอด 24 ชั่วโมง", "Equipment issue? Report it 24/7"),
         sub: L("วิศวกรติดต่อกลับภายใน 2 ชั่วโมง", "An engineer calls back within 2 hours"),
         btnLabel: L("แจ้งซ่อมออนไลน์", "Request a repair"),
@@ -327,11 +346,11 @@ export const PAGES: Page[] = [
       {
         id: id("s"),
         type: "pageHeader",
-        bg: "navy",
+        bg: "gray",
         heading: L("ติดต่อเรา", "Contact us"),
         sub: L("สอบถามสินค้า ขอใบเสนอราคา หรือแจ้งซ่อม ทีมงานพร้อมช่วยเหลือ", "Questions, quotes or repairs, we are here to help"),
       },
-      { id: id("s"), type: "contact", bg: "white", heading: L("ส่งข้อความถึงเรา", "Send us a message") },
+      { id: id("s"), type: "contact", bg: "white", heading: L("ส่งข้อความถึงเรา", "Send us a message"), items: CONTACT_PATHS() },
     ],
   },
 ];

@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { SocialGlyph, SOCIALS } from "@/components/SocialIcon";
 import type { GlobalContent } from "@/server/types";
-import type { Img, LText, Locale, MenuItem, SocialPlatform } from "@/types/site";
+import type { Img, LText, Locale, MenuItem, ProductTile, SocialPlatform } from "@/types/site";
 import { AIcon, type AIconName } from "../AIcon";
 import { useAdmin } from "../context";
+import { ICON_CHOICES } from "../sectionSchema";
 import { btn } from "../ui";
 
 /** ลำดับแพลตฟอร์มที่ให้เลือก */
@@ -192,6 +193,82 @@ export function GlobalEditor({ g, lang, onChange, canEdit, onPickMedia }: {
           </span>
           <input value={g.footer.copyright[lang]} onChange={(e) => onChange({ ...g, footer: { ...g.footer, copyright: setLabel(g.footer.copyright, e.target.value) } })} className={inp} lang={lang} />
         </label>
+      </Card>
+    </fieldset>
+  );
+}
+
+/** หน้ารายละเอียดสินค้าสร้างจากข้อมูลสินค้าเอง ที่นี่แก้ได้เฉพาะกล่องใต้ปุ่มติดต่อที่ใช้กับสินค้าทุกตัว */
+export function ProductPageEditor({ g, lang, onChange, canEdit }: { g: GlobalContent; lang: Locale; onChange: (g: GlobalContent) => void; canEdit: boolean }) {
+  const { lang: ui, t } = useAdmin();
+  const tiles = g.productTiles;
+  const set = (list: ProductTile[]) => onChange({ ...g, productTiles: list });
+  const move = (a: number, b: number) => {
+    if (b < 0 || b >= tiles.length) return;
+    const n = [...tiles];
+    const [x] = n.splice(a, 1);
+    n.splice(b, 0, x);
+    set(n);
+  };
+  const tag = <span className="rounded bg-soft px-[5px] py-px font-mono text-[10.5px] font-semibold text-blue">{lang.toUpperCase()}</span>;
+  return (
+    <fieldset disabled={!canEdit} className="m-0 flex min-w-0 flex-col gap-3 border-0 p-0">
+      <Card icon="check" title={ui === "th" ? "กล่องใต้ปุ่มติดต่อ" : "Tiles under the contact buttons"} sub={ui === "th" ? "กล่องเล็กใต้ปุ่มโทรและปุ่มติดต่อฝ่ายขาย ใส่ได้สูงสุด 8 กล่อง" : "Small tiles under the call and contact sales buttons, up to 8"}>
+        {tiles.length === 0 && <p className="m-0 text-sm text-ink2">{ui === "th" ? "ยังไม่มีกล่อง หน้าสินค้าจะไม่แสดงส่วนนี้" : "No tiles. This part is hidden on the product page."}</p>}
+        {tiles.map((x, i) => (
+          <div key={x.id} className="flex flex-col gap-2.5 rounded-[10px] border border-line bg-surface2 p-3">
+            <div className="flex items-center gap-1">
+              <strong className="flex-1 text-[13.5px] text-ink2">{(ui === "th" ? "กล่องที่ " : "Tile ") + (i + 1)}</strong>
+              <button type="button" onClick={() => move(i, i - 1)} disabled={i === 0} aria-label={t.c.up} className={`${iconBtn} disabled:opacity-30`}>
+                <AIcon name="chevU" />
+              </button>
+              <button type="button" onClick={() => move(i, i + 1)} disabled={i === tiles.length - 1} aria-label={t.c.down} className={`${iconBtn} disabled:opacity-30`}>
+                <AIcon name="chevD" />
+              </button>
+              <button type="button" onClick={() => set(tiles.filter((_, j) => j !== i))} aria-label={t.c.del} className={`${iconBtn} hover:bg-red-soft hover:text-red`}>
+                <AIcon name="trash" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={ui === "th" ? "ไอคอน" : "Icon"}>
+              {ICON_CHOICES.map((ic) => (
+                <button
+                  key={ic}
+                  type="button"
+                  role="radio"
+                  aria-checked={x.icon === ic}
+                  aria-label={ic}
+                  title={ic}
+                  onClick={() => set(tiles.map((y, j) => (j === i ? { ...y, icon: ic } : y)))}
+                  className={`grid size-10 cursor-pointer place-items-center rounded-lg border-[1.5px] ${x.icon === ic ? "border-blue-solid bg-soft text-blue" : "border-line bg-surface text-ink2"}`}
+                >
+                  <AIcon name={ic} />
+                </button>
+              ))}
+            </div>
+            <label className="flex flex-col gap-1">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2">
+                {ui === "th" ? "ข้อความ" : "Text"} {tag}
+              </span>
+              <input
+                value={x.label[lang]}
+                maxLength={80}
+                lang={lang}
+                onChange={(e) => set(tiles.map((y, j) => (j === i ? { ...y, label: { ...y.label, [lang]: e.target.value } } : y)))}
+                className={inp}
+              />
+            </label>
+          </div>
+        ))}
+        {tiles.length < 8 && (
+          <button
+            type="button"
+            onClick={() => set([...tiles, { id: uid("pt"), icon: "check", label: { th: "", en: "" } }])}
+            className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-line bg-transparent text-[14.5px] font-semibold text-blue hover:border-blue-solid hover:bg-soft"
+          >
+            <AIcon name="plus" />
+            {t.content.addItem}
+          </button>
+        )}
       </Card>
     </fieldset>
   );

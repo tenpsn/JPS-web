@@ -1,8 +1,11 @@
 import "server-only";
 import type { PoolClient } from "pg";
+import { TYPES } from "@/admin/sectionSchema";
 import { LIST_TABLES, pool, tx, type ListTable } from "./db";
 import { importLegacy } from "./legacy";
 import { hashPassword } from "./password";
+import { CATALOG_HELP, CONTACT_PATHS, FAQ_BTN, FAQ_HELP } from "@/content/site";
+import type { LText } from "@/types/site";
 import { createSeed, DEFAULT_PERMS } from "./seed";
 import type { DB } from "./types";
 
@@ -10,7 +13,7 @@ import type { DB } from "./types";
  * จำข้อมูลชุดล่าสุดไว้ในหน่วยความจำ และโหลดใหม่เมื่อเลขรุ่นในฐานข้อมูลเปลี่ยน */
 
 /** เพิ่มเลขนี้ทุกครั้งที่ migrate รู้จักข้อมูลใหม่ เพื่อให้ข้อมูลในฐานข้อมูลถูกปรับตามครั้งเดียว */
-const MIGRATE_REV = 17;
+const MIGRATE_REV = 22;
 
 // เลขล็อกของฐานข้อมูล ใช้ให้การบันทึกทำทีละครั้งแม้เปิดเซิร์ฟเวอร์หลายตัว
 const LOCK = 4204001;
@@ -156,9 +159,46 @@ function migrate(db: DB): DB {
       if (Array.isArray(s.items)) for (const it of s.items) delete it.imgAlt;
     }
   }
+  // ส่วนที่ไม่มีตัวเลือกพื้นหลัง ใช้สีตั้งต้นของประเภทนั้นเสมอ เช่นฮีโร่และส่วนหัวของหน้าเปลี่ยนจากกรมท่าเป็นเทา
+  for (const p of [...db.pages, ...(db.draft?.pages ?? [])]) {
+    for (const s of p.sections) {
+      const def = TYPES[s.type];
+      if (def?.noBg && def.defaultBg) s.bg = def.defaultBg;
+    }
+  }
   db.draft ??= null;
   db.draftRev ??= 0;
   if (db.draft && !db.draft.global) db.draft = null;
+  // ข้อความกล่องปรึกษา คำถามที่พบบ่อย และการ์ดเลือกเรื่อง ย้ายจากข้อความส่วนกลางไปอยู่ในส่วนของหน้านั้น ค่าที่เคยแก้ไว้ย้ายตามไปด้วย
+  type Old = { texts?: Record<string, LText | undefined> };
+  const oldSet = db.settings as unknown as Old;
+  const oldDraft = db.draft?.global as unknown as Old | undefined;
+  for (const [pages, texts] of [[db.pages, oldSet.texts], [db.draft?.pages ?? [], oldDraft?.texts ?? oldSet.texts]] as const) {
+    const old = texts ?? {};
+    const pick = (k: string, fb: LText): LText => ({ th: old[k]?.th?.trim() || fb.th, en: old[k]?.en?.trim() || fb.en });
+    const empty = (v?: LText) => !v?.th?.trim() && !v?.en?.trim();
+    for (const p of pages) {
+      for (const s of p.sections) {
+        if (s.type === "faq" && empty(s.help)) s.help = pick("faqHelp", FAQ_HELP);
+        // ปุ่มของคำถามที่พบบ่อยแก้ได้แล้ว ส่วนเดิมใช้ปุ่มติดต่อฝ่ายขายแบบเดิม
+        if (s.type === "faq" && empty(s.btnLabel) && !s.btnUrl) Object.assign(s, structuredClone(FAQ_BTN));
+        if (s.type === "products" && s.catalog && empty(s.helpTitle)) Object.assign(s, Object.fromEntries(Object.entries(CATALOG_HELP).map(([k, v]) => [k, pick(k, v)])));
+        if (s.type === "contact" && !s.items?.length) {
+          const keys = [["pathSalesT", "pathSalesD", "pathSalesGo"], ["pathServiceT", "pathServiceD", "pathServiceGo"], ["pathAllT", "pathAllD", "pathAllGo"]];
+          s.items = CONTACT_PATHS().map((it, i) => ({ ...it, title: pick(keys[i][0], it.title), desc: pick(keys[i][1], it.desc), btnLabel: pick(keys[i][2], it.btnLabel) }));
+        }
+      }
+    }
+  }
+  // ข้อความในหน้ารายละเอียดสินค้าเปลี่ยนเป็นรายการกล่องที่เพิ่มลบได้ หัวข้อของส่วนด้านล่างใช้ข้อความคงที่
+  for (const [g, o] of [[db.settings, oldSet], [db.draft?.global, oldDraft]] as const) {
+    if (!g || !o) continue;
+    if (!Array.isArray(g.productTiles)) {
+      const keys = ["trustInstall", "trustTrain", "trustAfter"];
+      g.productTiles = seed.settings.productTiles.map((x, i) => ({ ...x, label: { th: o.texts?.[keys[i]]?.th?.trim() || x.label.th, en: o.texts?.[keys[i]]?.en?.trim() || x.label.en } }));
+    }
+    delete o.texts;
+  }
   // เลิกใช้พิกัดแล้ว แผนที่ใช้โค้ดฝังแผนที่ของ Google Maps แทน
   for (const c of [db.settings.contact, db.draft?.global.contact] as (Record<string, unknown> | undefined)[]) {
     if (!c) continue;

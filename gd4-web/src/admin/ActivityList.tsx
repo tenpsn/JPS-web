@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { deleteActivity } from "@/app/admin/actions/activity";
 import type { Activity, PublicUser } from "@/server/types";
 import { AIcon } from "./AIcon";
-import { avatarColor } from "./avatar";
+import { Avatar } from "./Avatar";
 import { useAdmin } from "./context";
 import { fmtDate, relDate } from "./i18n";
 import { btn, Confirm, PAGE_SIZE, Pager, useToast } from "./ui";
@@ -14,14 +14,16 @@ import { btn, Confirm, PAGE_SIZE, Pager, useToast } from "./ui";
  * รายการประวัติการใช้งาน แสดงหน้าละ 10 แถว ใช้ทั้งหน้าแดชบอร์ดและแท็บประวัติการแก้ไข
  * ถ้ามีสิทธิ์ลบ จะติ๊กเลือกได้ เลือกข้ามหน้าได้ และลบเฉพาะรายการที่เลือก
  */
-export function ActivityList({ activity, users, empty, fullDate = false, rowClass = "px-5", canDel = false }: {
+export function ActivityList({ activity, users, empty, fullDate = false, rowClass = "px-5", canDel = false, per = PAGE_SIZE }: {
   activity: Activity[];
-  users: Pick<PublicUser, "id" | "name" | "ini">[];
+  users: Pick<PublicUser, "id" | "name" | "ini" | "avatar">[];
   empty: string;
   /** แสดงวันที่เต็มก่อนเวลาที่ผ่านมา */
   fullDate?: boolean;
   rowClass?: string;
   canDel?: boolean;
+  /** จำนวนแถวต่อหน้า หน้าแดชบอร์ดใช้น้อยกว่าแท็บประวัติ */
+  per?: number;
 }) {
   const { lang, t } = useAdmin();
   const router = useRouter();
@@ -30,9 +32,9 @@ export function ActivityList({ activity, users, empty, fullDate = false, rowClas
   const [sel, setSel] = useState<number[]>([]);
   const [confirm, setConfirm] = useState<number[] | null>(null);
   const [pending, start] = useTransition();
-  const pages = Math.max(1, Math.ceil(activity.length / PAGE_SIZE));
+  const pages = Math.max(1, Math.ceil(activity.length / per));
   const cur = Math.min(page, pages);
-  const rows = activity.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
+  const rows = activity.slice((cur - 1) * per, cur * per);
   const userBy = (id: number) => users.find((u) => u.id === id);
   const allChecked = rows.length > 0 && rows.every((a) => sel.includes(a.id));
   const offPage = sel.filter((id) => !rows.some((a) => a.id === id)).length;
@@ -102,9 +104,7 @@ export function ActivityList({ activity, users, empty, fullDate = false, rowClas
                   className="mt-2.5 size-[18px] flex-none cursor-pointer accent-[var(--blue-solid)]"
                 />
               )}
-              <span className="grid size-9 flex-none place-items-center rounded-full text-[12.5px] font-bold text-white" style={{ background: u ? avatarColor(u.id) : "#6b778a" }}>
-                {u?.ini[lang] ?? "?"}
-              </span>
+              <Avatar u={u} lang={lang} />
               <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
                 <span className="text-[15px] leading-[1.55]">
                   <strong className="font-semibold">{u?.name[lang] ?? "—"}</strong> {a.action[lang]} <span className="font-medium text-blue">{a.target[lang]}</span>
@@ -117,7 +117,7 @@ export function ActivityList({ activity, users, empty, fullDate = false, rowClas
       </ol>
       {pages > 1 && (
         <div className={`border-t border-line py-3.5 ${rowClass}`}>
-          <Pager page={cur} total={activity.length} onPage={setPage} />
+          <Pager page={cur} total={activity.length} onPage={setPage} per={per} />
         </div>
       )}
       <Confirm

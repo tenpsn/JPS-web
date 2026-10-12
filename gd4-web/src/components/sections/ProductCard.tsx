@@ -1,26 +1,28 @@
 import { Icon } from "@/components/Icon";
 import { LocalLink } from "@/components/LocalLink";
-import { Media } from "@/components/Media";
+import { Media, realImg } from "@/components/Media";
 import { tx } from "@/i18n/config";
 import type { Dict } from "@/i18n/dictionary";
 import type { Locale, Product } from "@/types/site";
 import { CardImages } from "./CardImages";
-import { delay } from "./shared";
+import { cardCls, delay } from "./shared";
 
 export const productUrl = (p: Product) => `/products/${p.sku.toLowerCase()}`;
+export const catUrl = (id: string) => `/products?cat=${encodeURIComponent(id)}`;
 
 export function ProductCard({ p, cat, lang, t, i }: { p: Product; cat: string; lang: Locale; t: Dict; i: number }) {
   const name = tx(p.name, lang);
+  const short = tx(p.short, lang);
   // รูปที่มีไฟล์แล้วทั้งหมด ถ้ามีมากกว่าหนึ่งรูปจะเลื่อนดูในการ์ดได้
   const pics = (p.images ?? []).filter((im) => im.src).map((im) => ({ id: im.id, src: im.src }));
   const sizes = "(min-width: 1024px) 25vw, 50vw";
   return (
     <article
       style={delay(i)}
-      className="anim-up group relative flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line bg-card text-ink transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-1 hover:shadow-card"
+      className={`${cardCls} relative`}
     >
       {/* รูปสินค้าแสดงเต็มรูปบนพื้นขาว เพราะรูปสินค้ามักถ่ายบนพื้นขาวและมีหลายสัดส่วน */}
-      <div className={`relative m-2.5 mb-0 aspect-[4/3] overflow-hidden rounded-img ${p.img ? "bg-white" : "bg-bg2"}`}>
+      <div className={`relative m-2.5 mb-0 aspect-[4/3] overflow-hidden rounded-img ${realImg(p.img) ? "bg-white" : "bg-bg2"}`}>
         {pics.length > 1 ? (
           <CardImages images={pics} start={Math.max(0, pics.findIndex((im) => im.src === p.img))} alt={name} sizes={sizes} />
         ) : p.img ? (
@@ -43,10 +45,15 @@ export function ProductCard({ p, cat, lang, t, i }: { p: Product; cat: string; l
             {name}
           </LocalLink>
         </h3>
-        <span className="font-mono text-[12.5px] font-medium text-ink3">{p.sku}</span>
-        <span className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-[14.5px] font-semibold text-primary" aria-hidden="true">
-          {t.detail}
-          <Icon name="chevR" />
+        {/* คำอธิบายสั้นช่วยให้เทียบเครื่องได้จากหน้ารายการ ตัดไว้ไม่เกินสองบรรทัด */}
+        {short && <p className="clamp-2 m-0 text-[14px] leading-[1.6] text-ink2">{short}</p>}
+        {/* รหัสสินค้ากับลิงก์อยู่แถวล่างสุดเสมอ การ์ดในแถวเดียวกันจึงตรงกัน */}
+        <span className="mt-auto flex items-center justify-between gap-3 pt-3">
+          <span className="min-w-0 truncate font-mono text-[12.5px] font-medium text-ink2">{p.sku}</span>
+          <span className="inline-flex flex-none items-center gap-1 text-[14.5px] font-semibold text-primary" aria-hidden="true">
+            {t.detail}
+            <Icon name="chevR" />
+          </span>
         </span>
       </div>
     </article>

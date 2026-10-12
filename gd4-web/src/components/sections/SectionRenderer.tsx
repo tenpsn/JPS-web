@@ -2,6 +2,7 @@ import { tx } from "@/i18n/config";
 import { getProducts } from "@/lib/content";
 import type { Locale, Page, Section, SiteSettings } from "@/types/site";
 import { Cards, Cta, Gallery, Logos, PageHeader, Stats, Steps, Table, Text, TextImage, Timeline } from "./basic";
+import { Categories } from "./Categories";
 import { Contact } from "./Contact";
 import { Faq } from "./Faq";
 import { Hero } from "./Hero";
@@ -9,13 +10,17 @@ import { Products } from "./Products";
 import { SectionShell } from "./shared";
 import { Video } from "./Video";
 
-function renderSection(s: Section, lang: Locale, page: Page, settings: SiteSettings) {
+/** หน้าที่มีทั้งส่วนหัวและรายการสินค้าแบบเต็ม ย้ายช่องค้นหาขึ้นไปไว้ในส่วนหัว */
+const searchInHeader = (page: Page) =>
+  page.sections.some((x) => x.type === "pageHeader" && !x.hidden) && page.sections.some((x) => x.type === "products" && x.catalog && !x.hidden);
+
+function renderSection(s: Section, lang: Locale, page: Page, settings: SiteSettings, preview?: boolean) {
   const dark = s.bg === "navy";
   switch (s.type) {
     case "hero":
       return <Hero s={s} />;
     case "pageHeader":
-      return <PageHeader s={s} lang={lang} dark={dark} crumb={tx(page.title, lang)} />;
+      return <PageHeader s={s} lang={lang} dark={dark} crumb={tx(page.title, lang)} settings={settings} search={searchInHeader(page)} />;
     case "text":
       return <Text s={s} lang={lang} dark={dark} />;
     case "textImage":
@@ -25,7 +30,16 @@ function renderSection(s: Section, lang: Locale, page: Page, settings: SiteSetti
     case "stats":
       return <Stats s={s} lang={lang} dark={dark} />;
     case "products":
-      return <Products s={s} lang={lang} />;
+      return (
+        <Products
+          s={s}
+          lang={lang}
+          phone={settings.contact.phone}
+          searchInHeader={searchInHeader(page)}
+        />
+      );
+    case "categories":
+      return <Categories s={s} lang={lang} preview={preview} />;
     case "logos":
       return <Logos s={s} lang={lang} dark={dark} />;
     case "timeline":
@@ -47,9 +61,11 @@ function renderSection(s: Section, lang: Locale, page: Page, settings: SiteSetti
   }
 }
 
-/** ส่วนสินค้าแนะนำที่ยังไม่มีสินค้าให้แสดง ซ่อนไว้บนเว็บจริง แต่ยังเห็นตอนดูตัวอย่างในหลังบ้าน */
+/** ส่วนสินค้าแนะนำและหมวดสินค้าที่ยังไม่มีสินค้าให้แสดง ซ่อนไว้บนเว็บจริง แต่ยังเห็นตอนดูตัวอย่างในหลังบ้าน */
 async function hasProducts(s: Section, preview?: boolean) {
-  if (preview || s.type !== "products" || s.catalog) return true;
+  if (preview) return true;
+  if (s.type === "categories") return (await getProducts({ limit: 1 })).length > 0;
+  if (s.type !== "products" || s.catalog) return true;
   return (await getProducts({ category: s.category, limit: 1 })).length > 0;
 }
 
@@ -57,7 +73,7 @@ export async function Sections({ page, lang, settings, preview }: { page: Page; 
   const show = await Promise.all(page.sections.map((s) => hasProducts(s, preview)));
   return page.sections.filter((_, i) => show[i]).map((s) => (
     <SectionShell key={s.id} bg={s.bg} anchor={s.anchor} previewId={preview ? s.id : undefined}>
-      {renderSection(s, lang, page, settings)}
+      {renderSection(s, lang, page, settings, preview)}
     </SectionShell>
   ));
 }

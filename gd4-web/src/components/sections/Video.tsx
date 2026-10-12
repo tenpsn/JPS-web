@@ -24,12 +24,13 @@ export function Video({ s, dark }: { s: VideoSection; dark: boolean }) {
   const heading = tx(s.heading, lang);
 
   return (
-    <div className="sec flex flex-col items-center gap-6 text-center">
-      <div className="flex flex-col gap-2">
+    // ข้อความซ้าย วิดีโอขวา บนมือถือเรียงต่อกัน
+    <div className="sec grid grid-cols-1 items-center gap-x-11 gap-y-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      <div className="flex flex-col gap-3">
         <H2>{heading}</H2>
-        <p className={`m-0 ${ink2(dark)}`}>{tx(s.body, lang)}</p>
+        <p className={`m-0 text-body leading-[1.8] ${ink2(dark)}`}>{tx(s.body, lang)}</p>
       </div>
-      <div className="relative aspect-video w-full max-w-[900px] overflow-hidden rounded-img">
+      <div className="relative aspect-video w-full overflow-hidden rounded-[16px] border border-line bg-[linear-gradient(135deg,var(--c-panel),var(--c-primary-solid))] shadow-card">
         {playing && src ? (
           <iframe
             src={src}
