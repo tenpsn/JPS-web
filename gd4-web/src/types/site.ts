@@ -230,8 +230,6 @@ export type Product = {
   /** รูปหลักที่แสดงในรายการสินค้า คือรูปที่ติดดาวไว้ */
   img: Img;
   images?: ProductImage[];
-  specs?: { id?: string; k: LText; v: string }[];
-  pdf?: { name: string; size: number; src: string } | null;
   /** วันและเวลาที่แก้ไขล่าสุดตามเวลาท้องถิ่น */
   updatedAt?: string;
   /** รหัสผู้ดูแลที่แก้ไขล่าสุด */

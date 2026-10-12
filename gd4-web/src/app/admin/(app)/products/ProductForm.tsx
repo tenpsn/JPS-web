@@ -8,7 +8,7 @@ import { MediaPicker } from "@/admin/MediaPicker";
 import { useAdmin } from "@/admin/context";
 import { fmtDate } from "@/admin/i18n";
 import { IMG_MAX, SHORT_MAX, validateProduct, type ProductErrors, type ProductInput } from "@/admin/productRules";
-import { btn, Confirm, FieldError, fmtSize, label, mediaSrcs, Modal, Pill, PubBar, RadioCard, Req, uploadFile, useToast, useUnsavedGuard } from "@/admin/ui";
+import { btn, Confirm, FieldError, label, mediaSrcs, Modal, Pill, PubBar, RadioCard, Req, uploadFile, useToast, useUnsavedGuard } from "@/admin/ui";
 import type { Category, LText, Locale, ProductImage } from "@/types/site";
 import { deleteProducts, saveProduct } from "../../actions/products";
 import { CategoriesModal } from "./CategoriesModal";
@@ -36,12 +36,10 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
   const [pending, start] = useTransition();
   const [dz, setDz] = useState(false);
   const [picker, setPicker] = useState(false);
-  const [pdfPicker, setPdfPicker] = useState(false);
   const [preview, setPreview] = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
   const [del, setDel] = useState(false);
   const imgInput = useRef<HTMLInputElement>(null);
-  const pdfInput = useRef<HTMLInputElement>(null);
   const dragFrom = useRef<number | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
 
@@ -139,22 +137,6 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
       const images = x.images.filter((i) => i.id !== id);
       return { ...x, images, mainId: x.mainId === id ? images[0]?.id ?? null : x.mainId };
     });
-
-  /* ไฟล์ PDF */
-  const addPdf = async (file?: File) => {
-    if (!file) return;
-    if (file.type !== "application/pdf" || file.size > 20 * 1024 * 1024) {
-      toast("err", t.toast.pdfOnly);
-      return;
-    }
-    const r = await uploadFile(file, "pdf");
-    if (!("src" in r)) {
-      toast("err", t.toast.pdfOnly);
-      return;
-    }
-    set((x) => ({ ...x, pdf: r }));
-    toast("ok", t.toast.pdfAdded);
-  };
 
   /* ช่องพิมพ์ข้อความแบบจัดรูปแบบได้ เซิร์ฟเวอร์จะล้างโค้ดอันตรายออกตอนบันทึก */
   const rte = useRef<HTMLDivElement>(null);
@@ -412,85 +394,6 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
             )}
           </section>
 
-          {/* ข้อมูลจำเพาะ */}
-          <section className={`${section} gap-3 anim-up [animation-delay:.15s]`}>
-            <h2 className={h2}>{t.form.specs}</h2>
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 text-[13px] font-semibold text-ink2">
-              <span>
-                {t.form.specKey} ({tab.toUpperCase()})
-              </span>
-              <span>{t.form.specVal}</span>
-              <span />
-            </div>
-            {f.specs.map((sp, i) => (
-              <div key={sp.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 [animation:a-up_.3s_ease-out_both]">
-                <input
-                  value={sp.k[tab]}
-                  onChange={(e) => set((x) => ({ ...x, specs: x.specs.map((s, j) => (j === i ? { ...s, k: { ...s.k, [tab]: e.target.value } } : s)) }))}
-                  placeholder={tab === "en" ? sp.k.th : sp.k.en}
-                  aria-label={`${t.form.specKey} ${i + 1}`}
-                  className="field min-h-11 text-[14.5px]"
-                />
-                <input
-                  value={sp.v}
-                  onChange={(e) => set((x) => ({ ...x, specs: x.specs.map((s, j) => (j === i ? { ...s, v: e.target.value } : s)) }))}
-                  aria-label={`${t.form.specVal} ${i + 1}`}
-                  className="field min-h-11 text-[14.5px]"
-                />
-                <button type="button" onClick={() => set((x) => ({ ...x, specs: x.specs.filter((_, j) => j !== i) }))} aria-label={t.c.del} className="grid size-11 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-ink3 hover:bg-red-soft hover:text-red">
-                  <AIcon name="trash" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => set((x) => ({ ...x, specs: [...x.specs, { id: uid("sp"), k: { th: "", en: "" }, v: "" }] }))}
-              className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border-[1.5px] border-dashed border-line bg-transparent text-[14.5px] font-semibold text-blue transition-colors hover:border-blue-solid hover:bg-soft"
-            >
-              <AIcon name="plus" />
-              {t.form.addRow}
-            </button>
-          </section>
-
-          {/* แคตตาล็อก PDF */}
-          <section className={`${section} gap-3.5 anim-up [animation-delay:.2s]`}>
-            <h2 className={h2}>{t.form.catalog}</h2>
-            {f.pdf ? (
-              <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-line bg-surface2 p-3 [animation:a-up_.3s_both]">
-                <span className="grid size-11 flex-none place-items-center rounded-lg bg-red-soft text-red">
-                  <AIcon name="file" />
-                </span>
-                <span className="flex min-w-[140px] flex-1 flex-col gap-0.5">
-                  <a href={f.pdf.src} target="_blank" rel="noopener noreferrer" className="break-all text-[14.5px] font-bold text-ink hover:text-blue">
-                    {f.pdf.name}
-                  </a>
-                  <span className="text-[13px] text-ink2">PDF · {fmtSize(f.pdf.size)}</span>
-                </span>
-                <button type="button" onClick={() => setPdfPicker(true)} className={`${btn.outline} min-h-10 px-3.5 text-sm`}>
-                  <AIcon name="file" />
-                  {t.content.chooseMedia}
-                </button>
-                <button type="button" onClick={() => pdfInput.current?.click()} className={`${btn.outline} min-h-10 px-3.5 text-sm`}>
-                  {t.form.replace}
-                </button>
-                <button type="button" onClick={() => set((x) => ({ ...x, pdf: null }))} aria-label={t.c.del} className="grid size-10 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-ink3 hover:bg-red-soft hover:text-red">
-                  <AIcon name="trash" />
-                </button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => pdfInput.current?.click()} className="flex min-h-16 cursor-pointer items-center justify-center gap-2.5 rounded-[10px] border-2 border-dashed border-line bg-surface2 text-[14.5px] text-ink2 hover:border-blue-solid hover:text-blue">
-                <AIcon name="upload" />
-                {t.form.pdfHint}
-              </button>
-            )}
-            {!f.pdf && (
-              <button type="button" onClick={() => setPdfPicker(true)} className={`${btn.outline} min-h-10 self-start px-3.5 text-sm`}>
-                <AIcon name="file" />
-                {t.content.chooseMedia}
-              </button>
-            )}
-            <input ref={pdfInput} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => (addPdf(e.target.files?.[0]), (e.target.value = ""))} />
-          </section>
         </div>
 
         <div className="flex flex-col gap-5 min-[1100px]:sticky min-[1100px]:top-0">
@@ -570,39 +473,12 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
             <h2 className="m-0 text-2xl font-bold leading-[1.35]">{f.name[lang]}</h2>
             <span className="font-mono text-[13px] font-medium text-ink3">SKU {f.sku}</span>
             <p className="m-0 text-[15.5px] leading-[1.7] text-ink2">{f.short[lang]}</p>
-            <div className="flex flex-wrap gap-2.5">
-              <span className="rounded-lg bg-[#c8312a] px-[18px] py-3 font-semibold text-white">{lang === "th" ? "ขอใบเสนอราคา" : "Request a quote"}</span>
-              {f.pdf && (
-                <span className="inline-flex items-center gap-2 rounded-lg border-[1.5px] border-line px-[18px] py-[11px] font-semibold">
-                  <AIcon name="download" />
-                  {t.form.catalog}
-                </span>
-              )}
-            </div>
             {/* แสดงข้อความที่ผู้ดูแลพิมพ์ไว้แต่ยังไม่บันทึก เซิร์ฟเวอร์จะล้างโค้ดอันตรายตอนบันทึก */}
             <div className="rte text-[15px] leading-[1.75] text-ink" dangerouslySetInnerHTML={{ __html: f.detail[lang] }} />
-            {f.specs.some((s) => s.k[lang]) && (
-              <>
-                <strong className="mt-1.5 text-base">{t.form.specs}</strong>
-                <table className="w-full border-collapse text-[14.5px]">
-                  <tbody>
-                    {f.specs
-                      .filter((s) => s.k[lang])
-                      .map((s) => (
-                        <tr key={s.id} className="border-t border-line">
-                          <td className="w-[45%] py-2.5 text-ink2">{s.k[lang]}</td>
-                          <td className="py-2.5 font-medium">{s.v}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </>
-            )}
           </div>
         </div>
       </Modal>
 
-      <MediaPicker open={pdfPicker} kind="pdf" current={f.pdf?.src ?? null} onPick={(src, name, size) => (set((x) => ({ ...x, pdf: { src, name, size } })), toast("ok", t.toast.pdfAdded))} onClose={() => setPdfPicker(false)} />
       <MediaPicker open={picker} current={null} keep={mediaSrcs(f.images)} onPick={pickImage} onClose={() => setPicker(false)} />
       {catsOpen && <CategoriesModal categories={categories} counts={{}} onClose={() => setCatsOpen(false)} />}
 

@@ -32,7 +32,7 @@ export default async function LoginPage() {
         <div className="relative flex max-w-[460px] flex-col gap-[18px] [animation:a-up_.7s_cubic-bezier(.2,.7,.2,1)_.1s_both]">
           <span className="inline-flex items-center gap-2.5 text-sm font-medium text-on-panel2">
             <span className="h-[3px] w-7 rounded-sm bg-brand-red" />
-            {t.login.panelEyebrow}
+            {brand.name} Admin
           </span>
           <h2 className="m-0 text-[40px] font-bold leading-[1.2] text-balance">{t.login.panelTitle}</h2>
           <p className="m-0 text-[17px] leading-[1.7] text-pretty text-on-panel2">{t.login.panelText}</p>
@@ -55,7 +55,7 @@ export default async function LoginPage() {
         </div>
         <div className="grid flex-1 place-items-center px-5 pb-14 pt-4">
           <div className="flex w-full max-w-[400px] flex-col gap-[26px] [animation:a-up_.6s_cubic-bezier(.2,.7,.2,1)_both]">
-            <LoginForm />
+            <LoginForm name={brand.name} />
           </div>
         </div>
       </div>

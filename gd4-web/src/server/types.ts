@@ -7,8 +7,8 @@ import type { Category, Design, LText, Page, Product, SiteSettings } from "@/typ
 export type Role = "super" | "editor" | "products" | "viewer";
 export const ROLES: Role[] = ["super", "editor", "products", "viewer"];
 
-export type Area = "dashboard" | "products" | "content" | "design" | "inbox" | "users" | "activity" | "settings";
-export const AREAS: Area[] = ["dashboard", "products", "content", "design", "inbox", "users", "activity", "settings"];
+export type Area = "dashboard" | "products" | "content" | "design" | "users" | "activity" | "settings";
+export const AREAS: Area[] = ["dashboard", "products", "content", "design", "users", "activity", "settings"];
 
 export type Action = "view" | "edit" | "del" | "publish";
 export const ACTIONS: Action[] = ["view", "edit", "del", "publish"];
@@ -43,22 +43,6 @@ export type AdminUser = {
 /** ข้อมูลผู้ใช้ที่ส่งไปหน้าเว็บได้อย่างปลอดภัย */
 export type PublicUser = Omit<AdminUser, "passwordHash" | "inviteHash" | "inviteExpires" | "sessionVer">;
 
-export type MessageStatus = "new" | "read" | "replied";
-
-export type Message = {
-  id: number;
-  name: string;
-  company: string;
-  phone: string;
-  email: string;
-  msg: string;
-  subject: string;
-  date: string;
-  /** เวลาที่ลูกค้าติ๊กยินยอมให้เก็บข้อมูล ข้อความเก่าก่อนมีช่องนี้จะไม่มีค่า */
-  consentAt?: string;
-  status: MessageStatus;
-};
-
 export type Activity = {
   id: number;
   userId: number;
@@ -73,7 +57,6 @@ export type DB = {
   pages: Page[];
   categories: Category[];
   products: Product[];
-  messages: Message[];
   users: AdminUser[];
   perms: Perms;
   activity: Activity[];

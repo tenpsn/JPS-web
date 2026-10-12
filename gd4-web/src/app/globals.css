@@ -159,7 +159,7 @@
   --radius-input: var(--r-input);
   --shadow-card: var(--sh);
 
-  --breakpoint-quote: 73.75rem; /* จอตั้งแต่ 1180 พิกเซล แสดงปุ่มขอใบเสนอราคาและเมนู 6 รายการ */
+  --breakpoint-mid: 73.75rem; /* จอตั้งแต่ 1180 พิกเซล แสดงเมนู 6 รายการ */
   --breakpoint-wide: 85rem; /* จอตั้งแต่ 1360 พิกเซล แสดงเมนู 7 รายการ */
 }
 
@@ -377,6 +377,13 @@ textarea.rounded-input {
 .rich ul,
 .rich ol {
   padding-left: 1.4em;
+}
+/* Tailwind ล้างเครื่องหมายหน้ารายการออก จึงต้องใส่คืน */
+.rich ul {
+  list-style: disc;
+}
+.rich ol {
+  list-style: decimal;
 }
 .rich a {
   text-decoration: underline;

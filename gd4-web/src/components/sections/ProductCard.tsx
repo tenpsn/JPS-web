@@ -19,11 +19,12 @@ export function ProductCard({ p, cat, lang, t, i }: { p: Product; cat: string; l
       style={delay(i)}
       className="anim-up group relative flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line bg-card text-ink transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-1 hover:shadow-card"
     >
-      <div className={`relative m-2.5 mb-0 aspect-[4/3] overflow-hidden rounded-img ${p.img ? "" : "bg-bg2"}`}>
+      {/* รูปสินค้าแสดงเต็มรูปบนพื้นขาว เพราะรูปสินค้ามักถ่ายบนพื้นขาวและมีหลายสัดส่วน */}
+      <div className={`relative m-2.5 mb-0 aspect-[4/3] overflow-hidden rounded-img ${p.img ? "bg-white" : "bg-bg2"}`}>
         {pics.length > 1 ? (
           <CardImages images={pics} start={Math.max(0, pics.findIndex((im) => im.src === p.img))} alt={name} sizes={sizes} />
         ) : p.img ? (
-          <Media img={p.img} alt={p.img === "placeholder" ? `${t.p.img} · ${p.sku}` : name} sizes={sizes} />
+          <Media img={p.img} alt={p.img === "placeholder" ? `${t.p.img} · ${p.sku}` : name} sizes={sizes} fit="contain" />
         ) : (
           <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-ink3">
             <span className="grid size-[52px] place-items-center rounded-full border-[1.5px] border-dashed border-line">

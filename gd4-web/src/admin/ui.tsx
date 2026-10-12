@@ -337,7 +337,7 @@ export function useUnsavedGuard(dirty: boolean) {
 /* ตัวช่วยอัปโหลดไฟล์ */
 export type Uploaded = { src: string; name: string; size: number };
 
-export async function uploadFile(file: File, kind: "image" | "icon" | "pdf" | "font"): Promise<Uploaded | { error: string }> {
+export async function uploadFile(file: File, kind: "image" | "icon" | "font"): Promise<Uploaded | { error: string }> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("kind", kind);

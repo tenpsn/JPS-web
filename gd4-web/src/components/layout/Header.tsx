@@ -13,7 +13,7 @@ import { useTheme } from "./theme";
  * ถ้ามีมากกว่านั้น ช่องสุดท้ายจะกลายเป็นเมนูเพิ่มเติม ทำด้วย CSS เพื่อไม่ให้หน้ากระพริบ */
 const SLOTS = [
   { max: 5, show: "lg:flex", hide: "lg:hidden" },
-  { max: 6, show: "quote:flex", hide: "quote:hidden" },
+  { max: 6, show: "mid:flex", hide: "mid:hidden" },
   { max: 7, show: "wide:flex", hide: "wide:hidden" },
 ];
 const visibleCount = (total: number, max: number) => (total <= max ? total : max - 1);
@@ -123,13 +123,6 @@ export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; s
         <LangSwitch lang={lang} path={path} label={t.language} />
         <ThemeToggle label={t.theme} />
 
-        <LocalLink
-          href="/contact"
-          className="hidden flex-none items-center gap-2 whitespace-nowrap rounded-btn bg-accent-solid px-[18px] py-[11px] text-btn font-semibold text-white hover:text-white hover:brightness-110 quote:inline-flex"
-        >
-          {t.quote}
-        </LocalLink>
-
         <button
           type="button"
           onClick={() => setDrawer(true)}
@@ -153,7 +146,6 @@ export function Header({ menu, siteName, logo, logoDark }: { menu: MenuItem[]; s
             setDrawer(false);
             setDrawerSub(null);
           }}
-          quote={t.quote}
           closeLabel={t.close}
         />
       )}
@@ -370,7 +362,7 @@ function ThemeToggle({ label }: { label: string }) {
   );
 }
 
-function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, quote, closeLabel }: {
+function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, closeLabel }: {
   menu: MenuItem[];
   lang: Locale;
   siteName: string;
@@ -378,7 +370,6 @@ function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, quote, close
   sub: string | null;
   setSub: (v: string | null) => void;
   onClose: () => void;
-  quote: string;
   closeLabel: string;
 }) {
   return (
@@ -442,15 +433,6 @@ function Drawer({ menu, lang, siteName, path, sub, setSub, onClose, quote, close
             );
           })}
         </nav>
-        <div className="border-t border-line px-5 pb-5 pt-4">
-          <LocalLink
-            href="/contact"
-            onClick={onClose}
-            className="flex min-h-[50px] items-center justify-center whitespace-nowrap rounded-btn bg-accent-solid text-btn font-semibold text-white hover:text-white"
-          >
-            {quote}
-          </LocalLink>
-        </div>
       </aside>
     </>
   );

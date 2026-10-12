@@ -2,12 +2,14 @@ import "server-only";
 import { Pool, type PoolClient } from "pg";
 
 /** ตารางที่เก็บรายการเป็นชุด แต่ละแถวเก็บข้อมูลหนึ่งรายการและลำดับในรายการ */
-export const LIST_TABLES = ["users", "pages", "categories", "products", "messages", "activity", "media"] as const;
+export const LIST_TABLES = ["users", "pages", "categories", "products", "activity", "media"] as const;
 export type ListTable = (typeof LIST_TABLES)[number];
 
 const SCHEMA = `
 create table if not exists meta (key text primary key, value jsonb not null);
 ${LIST_TABLES.map((t) => `create table if not exists ${t} (id text primary key, pos integer not null, data jsonb not null);`).join("\n")}
+-- ระบบข้อความจากลูกค้าเลิกใช้แล้ว
+drop table if exists messages;
 create table if not exists uploads (name text primary key, type text not null, size integer not null, body bytea not null, created_at timestamptz not null default now());
 -- รหัสจากเนื้อไฟล์ ใช้หาไฟล์ที่อัปโหลดซ้ำ
 alter table uploads add column if not exists hash text;

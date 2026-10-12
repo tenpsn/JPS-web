@@ -117,8 +117,8 @@ export const TYPES: Record<SectionType, TypeDef> = {
     fields: [F.heading, F.sub, { key: "category", kind: "chips", label: L("หมวดหมู่ที่แสดง", "Category shown"), opts: "cats", wide: true }, chips("count", L("จำนวนสินค้าที่แสดง", "Products shown"), [4, 8, 12])],
   },
   contact: {
-    group: "special", icon: "phone", name: L("ข้อมูลติดต่อและแผนที่", "Contact details & map"), desc: L("ที่อยู่ เบอร์โทร อีเมล แผนที่ และฟอร์ม", "Address, phone, email, map and form"),
-    fields: [{ ...F.heading, label: L("หัวข้อฟอร์ม", "Form heading") }],
+    group: "special", icon: "phone", name: L("ข้อมูลติดต่อและแผนที่", "Contact details & map"), desc: L("ที่อยู่ เบอร์โทร อีเมล เวลาทำการ และแผนที่", "Address, phone, email, hours and map"),
+    fields: [F.heading],
   },
 };
 

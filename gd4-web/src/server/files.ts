@@ -8,13 +8,12 @@ import { ensureSchema, pool } from "./db";
  * ถ้าภายหลังย้ายไป S3 โค้ดที่เรียกใช้ยังเห็นแค่ลิงก์ src เหมือนเดิม
  */
 
-export type UploadKind = "image" | "icon" | "pdf" | "font";
+export type UploadKind = "image" | "icon" | "font";
 
 const RULES: Record<UploadKind, { max: number; types: Record<string, string> }> = {
   image: { max: 5 * 1024 * 1024, types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } },
   // ไอคอนเว็บรับ ICO เพิ่มจากรูปทั่วไป
   icon: { max: 5 * 1024 * 1024, types: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/x-icon": "ico" } },
-  pdf: { max: 20 * 1024 * 1024, types: { "application/pdf": "pdf" } },
   font: { max: 5 * 1024 * 1024, types: { "font/woff2": "woff2", "font/woff": "woff", "font/ttf": "ttf", "font/otf": "otf" } },
 };
 
@@ -25,7 +24,6 @@ function sniff(buf: Buffer): string | null {
   if (h.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
   if (h.subarray(0, 4).toString("latin1") === "RIFF" && h.subarray(8, 12).toString("latin1") === "WEBP") return "image/webp";
   if (h[0] === 0x00 && h[1] === 0x00 && h[2] === 0x01 && h[3] === 0x00) return "image/x-icon";
-  if (h.subarray(0, 5).toString("latin1") === "%PDF-") return "application/pdf";
   const sig = h.subarray(0, 4).toString("latin1");
   if (sig === "wOF2") return "font/woff2";
   if (sig === "wOFF") return "font/woff";
@@ -64,12 +62,12 @@ export async function deleteUpload(src: string): Promise<void> {
 }
 
 export const MIME: Record<string, string> = {
-  jpg: "image/jpeg", png: "image/png", webp: "image/webp", ico: "image/x-icon", pdf: "application/pdf",
+  jpg: "image/jpeg", png: "image/png", webp: "image/webp", ico: "image/x-icon",
   woff2: "font/woff2", woff: "font/woff", ttf: "font/ttf", otf: "font/otf",
 };
 
 /** รูปแบบชื่อไฟล์ที่ระบบตั้งให้ */
-export const UPLOAD_NAME = /^[0-9a-f-]{36}\.(jpg|png|webp|ico|pdf|woff2|woff|ttf|otf)$/;
+export const UPLOAD_NAME = /^[0-9a-f-]{36}\.(jpg|png|webp|ico|woff2|woff|ttf|otf)$/;
 
 /** อ่านไฟล์ที่อัปโหลดไว้จากชื่อที่ระบบตั้งให้ ถ้าไม่พบหรือชื่อไม่ถูกรูปแบบจะได้ null */
 export async function readUpload(name: string): Promise<{ body: Buffer; type: string; size: number } | null> {
@@ -79,15 +77,3 @@ export async function readUpload(name: string): Promise<{ body: Buffer; type: st
   return rows[0] ?? null;
 }
 
-/** ประเภทไฟล์ที่แสดงในแท็บไฟล์ของคลัง ไอคอนเว็บอยู่ในแท็บรูป ฟอนต์จัดการในหน้าธีมและตัวอักษร */
-export const FILE_TYPES = ["application/pdf"];
-
-/** รายการไฟล์ในแท็บไฟล์ของคลัง เรียงจากใหม่ไปเก่า ไม่ดึงเนื้อไฟล์ */
-export async function listUploadFiles(): Promise<{ src: string; label: string | null; type: string; size: number; when: Date }[]> {
-  await ensureSchema();
-  const { rows } = await pool().query<{ name: string; label: string | null; type: string; size: number; created_at: Date }>(
-    "select name, label, type, size, created_at from uploads where type = any($1::text[]) order by created_at desc",
-    [FILE_TYPES],
-  );
-  return rows.map((r) => ({ src: `/media/${r.name}`, label: r.label, type: r.type, size: r.size, when: r.created_at }));
-}

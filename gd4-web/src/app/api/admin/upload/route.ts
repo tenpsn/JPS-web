@@ -4,8 +4,8 @@ import { saveUpload, type UploadKind } from "@/server/files";
 import { mutate, nowStr } from "@/server/store";
 
 /**
- * รับไฟล์ที่แอดมินอัปโหลด ได้แก่รูปภาพ ไฟล์ PDF และฟอนต์
- * แยกเป็นเส้นทางนี้เพื่อให้อัปโหลด PDF ขนาดใหญ่ได้โดยไม่ต้องขยายขีดจำกัดของทั้งระบบ
+ * รับไฟล์ที่แอดมินอัปโหลด ได้แก่รูปภาพ ไอคอนเว็บ และฟอนต์
+ * แยกเป็นเส้นทางนี้เพื่อให้อัปโหลดไฟล์ขนาดใหญ่ได้โดยไม่ต้องขยายขีดจำกัดของทั้งระบบ
  */
 export async function POST(req: Request) {
   const user = await getCurrentUser();
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const fd = await req.formData();
   const file = fd.get("file");
   const kind = String(fd.get("kind")) as UploadKind;
-  if (!(file instanceof File) || !["image", "icon", "pdf", "font"].includes(kind)) return Response.json({ error: "bad" }, { status: 400 });
+  if (!(file instanceof File) || !["image", "icon", "font"].includes(kind)) return Response.json({ error: "bad" }, { status: 400 });
 
   const saved = await saveUpload(file, kind);
   if ("error" in saved) return Response.json(saved, { status: 400 });
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       db.media.unshift({ ...saved, name: old?.name ?? saved.name, when: nowStr(), userId: user.id });
       db.media = db.media.slice(0, 1000);
     }
-    const what = { image: { th: "รูป", en: "image" }, icon: { th: "ไอคอนเว็บ", en: "site icon" }, pdf: { th: " PDF", en: "PDF" }, font: { th: "ฟอนต์", en: "font" } }[kind];
+    const what = { image: { th: "รูป", en: "image" }, icon: { th: "ไอคอนเว็บ", en: "site icon" }, font: { th: "ฟอนต์", en: "font" } }[kind];
     logActivity(db, user.id, { th: `อัปโหลด${what.th}`, en: `uploaded ${what.en}` }, { th: saved.name, en: saved.name });
   });
   return Response.json(saved);

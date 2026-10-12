@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Icon } from "@/components/Icon";
+import { ImageZoom } from "@/components/ImageZoom";
 import { Media } from "@/components/Media";
 import { useI18n } from "@/i18n/client";
 import type { Img } from "@/types/site";
@@ -11,19 +12,20 @@ export type GalleryImage = { id: string; src: Img; alt: string };
 /**
  * รูปสินค้าในหน้ารายละเอียด หน้าตาและการใช้งานเหมือนรูปในการ์ดสินค้า ถ้ามีหลายรูป
  * เลื่อนได้ด้วยลูกศรที่ขึ้นตอนชี้เมาส์ การปัดบนมือถือ ปุ่มลูกศรบนแป้นพิมพ์ จุดบนรูป และรูปย่อด้านล่าง
- * ถ้ามีรูปเดียวจะแสดงรูปนั้นอย่างเดียว
+ * ถ้ามีรูปเดียวจะแสดงรูปนั้นอย่างเดียว กดที่รูปเพื่อเปิดดูเต็มจอและซูมได้
  */
 export function ProductGallery({ images, start = 0, noImg }: { images: GalleryImage[]; start?: number; noImg: string }) {
   const { t } = useI18n();
   const [i, setI] = useState(Math.min(Math.max(start, 0), Math.max(images.length - 1, 0)));
+  const [zoom, setZoom] = useState(false);
   const touchX = useRef<number | null>(null);
   const many = images.length > 1;
   const go = (n: number) => setI((n + images.length) % images.length);
 
-  const frame = "relative aspect-[4/3] overflow-hidden rounded-img border border-line bg-bg2";
+  const frame = "relative aspect-[4/3] overflow-hidden rounded-img border border-line";
   if (!images.length) {
     return (
-      <div className={frame}>
+      <div className={`${frame} bg-bg2`}>
         <span className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-ink3">
           <Icon name="noimg" size={28} />
           <span className="text-sm">{noImg}</span>
@@ -38,7 +40,7 @@ export function ProductGallery({ images, start = 0, noImg }: { images: GalleryIm
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <div
-        className={`group ${frame}`}
+        className={`group ${frame} bg-white`}
         role={many ? "region" : undefined}
         aria-roledescription={many ? "carousel" : undefined}
         aria-label={many ? t.gallery : undefined}
@@ -63,9 +65,14 @@ export function ProductGallery({ images, start = 0, noImg }: { images: GalleryIm
             aria-hidden={k !== i}
             className={`absolute inset-0 transition-opacity duration-500 ${k === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
           >
-            <Media img={im.src} alt={im.alt} priority={k === start} />
+            <Media img={im.src} alt={im.alt} priority={k === start} fit="contain" />
           </div>
         ))}
+        <button type="button" onClick={() => setZoom(true)} aria-label={t.viewLarge} className="absolute inset-0 z-[1] cursor-zoom-in border-0 bg-transparent p-0">
+          <span className="absolute right-3 top-3 grid size-10 place-items-center rounded-full border border-line bg-card/90 text-ink shadow-card">
+            <Icon name="search" />
+          </span>
+        </button>
         {many && (
           <>
             <button type="button" onClick={() => go(i - 1)} aria-label={t.prevImg} className={`${arrow} left-3`}>
@@ -99,15 +106,17 @@ export function ProductGallery({ images, start = 0, noImg }: { images: GalleryIm
               onClick={() => setI(k)}
               aria-label={`${t.showImg} ${k + 1}`}
               aria-current={k === i}
-              className={`relative aspect-[4/3] w-[84px] flex-none cursor-pointer overflow-hidden rounded-img border-2 bg-bg2 transition-[border-color,opacity] ${
+              className={`relative aspect-[4/3] w-[84px] flex-none cursor-pointer overflow-hidden rounded-img border-2 bg-white transition-[border-color,opacity] ${
                 k === i ? "border-primary-solid" : "border-transparent opacity-70 hover:opacity-100"
               }`}
             >
-              <Media img={im.src} alt="" label={false} sizes="84px" />
+              <Media img={im.src} alt="" label={false} sizes="84px" fit="contain" />
             </button>
           ))}
         </div>
       )}
+
+      {zoom && <ImageZoom images={images} index={i} onIndex={setI} onClose={() => setZoom(false)} />}
     </div>
   );
 }

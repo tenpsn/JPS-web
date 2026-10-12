@@ -276,6 +276,13 @@ html[data-fade="1"] * {
   padding-left: 22px;
   margin: 6px 0;
 }
+/* Tailwind ล้างเครื่องหมายหน้ารายการออก จึงต้องใส่คืน */
+.rte ul {
+  list-style: disc;
+}
+.rte ol {
+  list-style: decimal;
+}
 .rte p {
   margin: 0 0 8px;
 }

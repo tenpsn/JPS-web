@@ -18,7 +18,6 @@ const NAV: { area: Area; href: string; icon: AIconName }[] = [
   { area: "products", href: "/admin/products", icon: "box" },
   { area: "content", href: "/admin/content", icon: "page" },
   { area: "design", href: "/admin/design", icon: "text" },
-  { area: "inbox", href: "/admin/inbox", icon: "inbox" },
   { area: "users", href: "/admin/users", icon: "users" },
   { area: "settings", href: "/admin/settings", icon: "gear" },
 ];
@@ -45,14 +44,11 @@ const setCollapsedPref = (v: boolean) => {
   listeners.forEach((l) => l());
 };
 
-export function AdminShell({ user, areas, newMessages, latestMessage, brand, children }: {
+export function AdminShell({ user, areas, brand, children }: {
   user: PublicUser;
   brand: BrandInfo;
   /** ส่วนที่ผู้ใช้คนนี้มีสิทธิ์เข้าดู */
   areas: Area[];
-  newMessages: number;
-  /** รหัสข้อความล่าสุดตอนโหลดหน้า ใช้นับข้อความที่เข้ามาใหม่ */
-  latestMessage: number;
   children: React.ReactNode;
 }) {
   const { lang, t } = useAdmin();
@@ -78,14 +74,6 @@ export function AdminShell({ user, areas, newMessages, latestMessage, brand, chi
     return () => document.removeEventListener("click", onClick, true);
   }, []);
 
-  // ตัวเลขข้อความที่ยังไม่อ่าน อัปเดตได้ทั้งจากการโหลดหน้าใหม่และจากการเช็คเป็นระยะ
-  const [unread, setUnread] = useState(newMessages);
-  const [lastNew, setLastNew] = useState(newMessages);
-  if (newMessages !== lastNew) {
-    setLastNew(newMessages);
-    setUnread(newMessages);
-  }
-
   // ปิดเมนูสไลด์เมื่อเปลี่ยนหน้า
   const [lastPath, setLastPath] = useState(path);
   if (path !== lastPath) {
@@ -108,7 +96,7 @@ export function AdminShell({ user, areas, newMessages, latestMessage, brand, chi
 
   return (
     <ToastProvider>
-    <LiveRefresh latest={latestMessage} inbox={areas.includes("inbox")} onUnread={setUnread} />
+    <LiveRefresh />
     <div className="relative flex h-dvh">
       {drawer && <div onClick={() => setDrawer(false)} className="absolute inset-0 z-[39] bg-[var(--overlay)] [animation:a-fade_.3s_both] md2:hidden" />}
 
@@ -153,15 +141,6 @@ export function AdminShell({ user, areas, newMessages, latestMessage, brand, chi
                 />
                 <AIcon name={n.icon} size={20} />
                 <span className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap ${labelCls}`}>{label}</span>
-                {n.area === "inbox" && unread > 0 && (
-                  <span
-                    className={`grid h-5 min-w-5 place-items-center rounded-[10px] bg-brand-red px-1.5 text-xs font-bold text-white md2:absolute md2:right-2 md2:top-[5px] ${
-                      collapsed ? "" : "xl2:static"
-                    }`}
-                  >
-                    {unread}
-                  </span>
-                )}
               </Link>
             );
           })}

@@ -10,13 +10,13 @@ const EXTRA = {
   top: { language: L("ภาษา", "Language") },
   login: {
     errCred: L("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password"),
+    sub: L("จัดการสินค้าและเนื้อหาเว็บไซต์ {name}", "Manage {name} products and website content"),
+    panelText: L("อัปเดตสินค้าและเนื้อหาหน้าเว็บได้จากที่เดียว", "Update products and page content in one place."),
     showPw: L("แสดงรหัสผ่าน", "Show password"), hidePw: L("ซ่อนรหัสผ่าน", "Hide password"),
   },
   dash: {
-    hello: L("สวัสดี คุณ", "Hello, "), latest: L("ล่าสุด", "Latest"),
+    hello: L("สวัสดี คุณ ", "Hello, "), latest: L("ล่าสุด", "Latest"),
     denied: L("บัญชีของคุณไม่มีสิทธิ์เข้าส่วนนั้น", "Your account doesn't have access to that area"),
-    cMsgs: L("ข้อความที่ยังไม่ได้ตอบ", "Messages awaiting reply"),
-    unread: L("ยังไม่อ่าน", "Unread"), readNoReply: L("อ่านแล้ว", "Read"),
   },
   roles: {
     super: L("ผู้ดูแลสูงสุด", "Super admin"), editor: L("แก้ไขเนื้อหา", "Content editor"),
@@ -36,6 +36,8 @@ const EXTRA = {
     showing: L("แสดง {from} ถึง {to} จาก {total} รายการ", "Showing {from} to {to} of {total}"),
   },
   users: {
+    editorD: L("แก้ไขสินค้าและเนื้อหาหน้าเว็บ", "Edit products and pages"),
+    productsD: L("เพิ่ม แก้ไข และเผยแพร่สินค้า", "Add, edit and publish products"),
     added: L("เพิ่มผู้ดูแลแล้ว", "Admin added"), superOnly: L("เฉพาะผู้ดูแลสูงสุด", "Super admin only"), linkReady: L("สร้างลิงก์เชิญใหม่แล้ว", "New invite link created"),
     linkTitle: L("ลิงก์เชิญ", "Invite link"),
     linkText: L(
@@ -52,20 +54,9 @@ const EXTRA = {
     delText: L("ไฟล์รูปจะถูกลบถาวรและกู้คืนไม่ได้", "The image file will be permanently deleted and can't be restored."),
     deleted: L("ลบรูปแล้ว", "Image deleted"),
     inUse: L("รูปนี้ยังใช้อยู่ในเว็บ ต้องเอาออกจากหน้าที่ใช้ก่อนจึงจะลบได้", "This image is still used on the site. Remove it from where it's used first."),
-    title: L("คลังรูปและไฟล์", "Media & files"),
-    tabImg: L("รูปภาพ", "Images"),
-    tabFile: L("ไฟล์", "Files"),
-    fileSub: L("ไฟล์ PDF ที่อัปโหลดไว้ ไฟล์ที่ไม่ได้ใช้ลบได้", "Uploaded PDF files. Files not in use can be deleted."),
-    pdfSub: L("คลิก PDF เพื่อเลือก หรืออัปโหลด PDF ใหม่เข้าคลัง", "Click a PDF to use it, or upload a new one"),
-    upload: L("อัปโหลด", "Upload"),
-    noFiles: L("ยังไม่มีไฟล์ในคลัง", "No files yet"),
+    title: L("คลังรูป", "Media library"),
     used: L("ใช้อยู่", "In use"),
-    delFileTitle: L("ลบไฟล์นี้ออกจากคลัง?", "Delete this file from the library?"),
-    delFileText: L("ไฟล์จะถูกลบถาวรและกู้คืนไม่ได้", "The file will be permanently deleted and can't be restored."),
-    fileDeleted: L("ลบไฟล์แล้ว", "File deleted"),
-    fileInUse: L("ไฟล์นี้ยังใช้อยู่ในเว็บ ต้องเอาออกจากที่ใช้ก่อนจึงจะลบได้", "This file is still used on the site. Remove it from where it's used first."),
   },
-  inbox: { consent: L("ยินยอมให้เก็บข้อมูลเมื่อ", "Consented to data use on"), colMsg: L("ข้อความ", "Message") },
   soon: { title: L("กำลังพัฒนา", "Coming soon"), text: L("หน้านี้จะเปิดใช้ในขั้นตอนถัดไปของการพัฒนา", "This screen is part of the next development phase.") },
 };
 

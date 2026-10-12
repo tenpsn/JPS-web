@@ -69,9 +69,6 @@ export function Hero({ s }: { s: HeroSection }) {
             {tx(cur.btnLabel, lang) || t.viewAll}
             <Icon name="arrowR" />
           </LocalLink>
-          <LocalLink href="/contact" className={btn.outlineLight}>
-            {t.quote}
-          </LocalLink>
         </div>
 
         {count > 1 && (

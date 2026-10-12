@@ -20,9 +20,9 @@ const all = (p: Record<Action, boolean>) => Object.fromEntries(AREAS.map((a) => 
 
 export const DEFAULT_PERMS: Perms = {
   super: all(P(1, 1, 1, 1)),
-  editor: { dashboard: P(1, 0, 0, 0), products: P(1, 1, 0, 0), content: P(1, 1, 1, 1), design: P(1, 1, 0, 0), inbox: P(1, 1, 1, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
-  products: { dashboard: P(1, 0, 0, 0), products: P(1, 1, 1, 1), content: P(1, 0, 0, 0), design: P(0, 0, 0, 0), inbox: P(1, 1, 0, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
-  viewer: { dashboard: P(1, 0, 0, 0), products: P(1, 0, 0, 0), content: P(1, 0, 0, 0), design: P(1, 0, 0, 0), inbox: P(1, 0, 0, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
+  editor: { dashboard: P(1, 0, 0, 0), products: P(1, 1, 0, 0), content: P(1, 1, 1, 1), design: P(1, 1, 0, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
+  products: { dashboard: P(1, 0, 0, 0), products: P(1, 1, 1, 1), content: P(1, 0, 0, 0), design: P(0, 0, 0, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
+  viewer: { dashboard: P(1, 0, 0, 0), products: P(1, 0, 0, 0), content: P(1, 0, 0, 0), design: P(1, 0, 0, 0), users: P(0, 0, 0, 0), activity: P(1, 0, 0, 0), settings: P(0, 0, 0, 0) },
 };
 
 /** เวลาที่แก้ล่าสุดและผู้แก้ของสินค้าแต่ละรหัส */
@@ -57,15 +57,6 @@ export function createSeed(): DB {
       user(5, "กฤต ศักดิ์ดี", "Krit Sakdee", "กศ", "KS", "krit@gdfourmedical.com", "editor", null, "invited"),
     ],
     perms: structuredClone(DEFAULT_PERMS),
-    messages: [
-      { id: 1, name: "พญ.อรอุมา ทองดี", company: "โรงพยาบาลบางนาเวช", phone: "081-234-5678", email: "oraumar@bangnavet.example", subject: "ขอใบเสนอราคา PM-12 จำนวน 8 เครื่อง", msg: "ต้องการใบเสนอราคาเครื่องติดตามสัญญาณชีพ PM-12 จำนวน 8 เครื่อง สำหรับหอผู้ป่วยวิกฤตที่กำลังขยาย ขอทราบระยะเวลาส่งมอบและเงื่อนไขการรับประกันด้วยค่ะ", date: "2026-10-02 10:58", status: "new" },
-      { id: 2, name: "วิชัย ประเสริฐ", company: "คลินิกหมอวิชัยเวชกรรม", phone: "089-111-2233", email: "wichai.clinic@example.com", subject: "ขอนัดสาธิตเครื่องอัลตราซาวด์ UX-80", msg: "สนใจเครื่องอัลตราซาวด์ UX-80 ขอนัดสาธิตการใช้งานที่คลินิกในสัปดาห์หน้าได้ไหมครับ", date: "2026-10-02 08:40", status: "new" },
-      { id: 3, name: "Daniel Hart", company: "Siam International Clinic", phone: "+66 92 555 0142", email: "d.hart@siamintl.example", subject: "Quote request: AED-7 with staff training", msg: "We would like a quote for two AED-7 units including staff training. Could you also share the PDF catalog?", date: "2026-10-01 19:22", status: "new" },
-      { id: 4, name: "กัญญา มณีรัตน์", company: "โรงพยาบาลชลประชา", phone: "038-765-432", email: "kanya.m@cholpracha.example", subject: "แจ้งซ่อม SP-200 มีเสียงดังผิดปกติ", msg: "เครื่องดูดเสมหะ SP-200 ที่ซื้อไปเมื่อปีที่แล้วมีเสียงดังผิดปกติ ต้องการนัดช่างเข้าตรวจเช็กค่ะ", date: "2026-10-01 14:05", status: "read" },
-      { id: 5, name: "ประวิทย์ ชัยมงคล", company: "ศูนย์ไตเทียมรักษ์ไต", phone: "02-998-7766", email: "prawit@rakthai.example", subject: "สอบถามราคาเตียงผู้ป่วยไฟฟ้า 20 เตียง", msg: "ขอข้อมูลเตียงผู้ป่วยไฟฟ้า 5 ฟังก์ชัน และราคาสำหรับสั่งซื้อ 20 เตียงครับ", date: "2026-09-30 09:12", status: "replied" },
-      { id: 6, name: "สุนิสา พรหมมา", company: "โรงพยาบาลส่งเสริมสุขภาพตำบลหนองบัว", phone: "086-444-1212", email: "sunisa.p@example.com", subject: "สอบถามบริการสอบเทียบประจำปี", msg: "อยากทราบว่ามีบริการสอบเทียบเครื่องวัดความดันประจำปีหรือไม่คะ", date: "2026-09-28 15:30", status: "replied" },
-      { id: 7, name: "Lisa Chen", company: "MedAsia Distribution", phone: "+65 8123 4567", email: "lisa.chen@medasia.example", subject: "Regional distribution partnership", msg: "Interested in becoming a regional partner. Who can we talk to about distribution in Singapore?", date: "2026-09-26 11:47", status: "read" },
-    ],
     activity: [
       act(1, "แก้ไขสินค้า", "edited product", "เครื่องติดตามสัญญาณชีพ PM-12", "PM-12 Patient Monitor", "2026-10-02 09:42"),
       act(2, "เผยแพร่หน้า", "published page", "หน้าแรก · สไลด์ Hero", "Home · Hero slides", "2026-10-02 08:15"),

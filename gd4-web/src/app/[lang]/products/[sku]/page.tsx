@@ -83,31 +83,8 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/product
               <div className="rich text-body leading-[1.8]" dangerouslySetInnerHTML={{ __html: detail }} />
             )}
 
-            <div className="flex flex-col gap-3">
-              <h2 className="m-0 font-head text-h3 font-semibold">{t.p.specs}</h2>
-              {p.specs?.some((sp) => tx(sp.k, lang)) ? (
-                <dl className="m-0 overflow-hidden rounded-card border border-line bg-card">
-                  {p.specs.filter((sp) => tx(sp.k, lang)).map((sp, i) => (
-                    <div key={i} className="grid grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)] gap-3 border-t border-line px-4 py-3 first:border-t-0">
-                      <dt className="text-ink2">{tx(sp.k, lang)}</dt>
-                      <dd className="m-0 font-medium">{sp.v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="m-0 rounded-card border border-dashed border-line px-4 py-3.5 text-[15px] text-ink2">{t.p.noSpecs}</p>
-              )}
-            </div>
 
             <div className="flex flex-wrap gap-3 pt-1">
-              <LocalLink href="/contact" className={btn.accent}>
-                {t.quote}
-              </LocalLink>
-              {p.pdf && (
-                <a href={p.pdf.src} download={p.pdf.name} className={btn.outline}>
-                  {t.p.catalog}
-                </a>
-              )}
               <LocalLink href="/products" className={btn.outline}>
                 {t.p.back}
               </LocalLink>

@@ -12,7 +12,6 @@ export async function GET(_req: Request, ctx: RouteContext<"/media/[name]">) {
       // ชื่อไฟล์สุ่มไม่ซ้ำกัน เนื้อหาจึงไม่เปลี่ยน เก็บแคชได้นาน
       "Cache-Control": "public, max-age=31536000, immutable",
       "X-Content-Type-Options": "nosniff",
-      ...(file.type === "application/pdf" ? { "Content-Disposition": "inline" } : {}),
     },
   });
 }

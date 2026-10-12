@@ -10,7 +10,7 @@ import type { DB } from "./types";
  * จำข้อมูลชุดล่าสุดไว้ในหน่วยความจำ และโหลดใหม่เมื่อเลขรุ่นในฐานข้อมูลเปลี่ยน */
 
 /** เพิ่มเลขนี้ทุกครั้งที่ migrate รู้จักข้อมูลใหม่ เพื่อให้ข้อมูลในฐานข้อมูลถูกปรับตามครั้งเดียว */
-const MIGRATE_REV = 15;
+const MIGRATE_REV = 17;
 
 // เลขล็อกของฐานข้อมูล ใช้ให้การบันทึกทำทีละครั้งแม้เปิดเซิร์ฟเวอร์หลายตัว
 const LOCK = 4204001;
@@ -21,7 +21,6 @@ const KEY = {
   pages: (x: DB["pages"][number]) => x.id,
   categories: (x: DB["categories"][number]) => x.id,
   products: (x: DB["products"][number]) => x.id,
-  messages: (x: DB["messages"][number]) => String(x.id),
   activity: (x: DB["activity"][number]) => String(x.id),
   media: (x: DB["media"][number]) => x.src,
 } satisfies Record<ListTable, (x: never) => string>;
@@ -121,6 +120,14 @@ function migrate(db: DB): DB {
   // เลิกใช้แท็บตั้งค่าภาษาแล้ว หน้าเว็บกำหนดภาษาไว้ในโค้ด
   delete (db.settings as { languages?: unknown }).languages;
   db.media ??= [];
+  // เลิกใช้ฟอร์มติดต่อและระบบข้อความจากลูกค้าแล้ว
+  delete (db as { messages?: unknown }).messages;
+  for (const r of Object.values(db.perms) as Record<string, unknown>[]) delete r.inbox;
+  // เลิกใช้ตารางสเปกและแคตตาล็อก PDF ของสินค้าแล้ว
+  for (const p of db.products as { specs?: unknown; pdf?: unknown }[]) {
+    delete p.specs;
+    delete p.pdf;
+  }
   // เพิ่มสิทธิ์ของประวัติการแก้ไข
   for (const r of Object.keys(DEFAULT_PERMS) as (keyof typeof DEFAULT_PERMS)[]) {
     if (db.perms[r]) db.perms[r].activity ??= structuredClone(DEFAULT_PERMS[r].activity);

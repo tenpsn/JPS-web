@@ -1,4 +1,5 @@
 import { tx } from "@/i18n/config";
+import { getProducts } from "@/lib/content";
 import type { Locale, Page, Section, SiteSettings } from "@/types/site";
 import { Cards, Cta, Gallery, Logos, PageHeader, Stats, Steps, Table, Text, TextImage, Timeline } from "./basic";
 import { Contact } from "./Contact";
@@ -46,8 +47,15 @@ function renderSection(s: Section, lang: Locale, page: Page, settings: SiteSetti
   }
 }
 
-export function Sections({ page, lang, settings, preview }: { page: Page; lang: Locale; settings: SiteSettings; preview?: boolean }) {
-  return page.sections.map((s) => (
+/** ส่วนสินค้าแนะนำที่ยังไม่มีสินค้าให้แสดง ซ่อนไว้บนเว็บจริง แต่ยังเห็นตอนดูตัวอย่างในหลังบ้าน */
+async function hasProducts(s: Section, preview?: boolean) {
+  if (preview || s.type !== "products" || s.catalog) return true;
+  return (await getProducts({ category: s.category, limit: 1 })).length > 0;
+}
+
+export async function Sections({ page, lang, settings, preview }: { page: Page; lang: Locale; settings: SiteSettings; preview?: boolean }) {
+  const show = await Promise.all(page.sections.map((s) => hasProducts(s, preview)));
+  return page.sections.filter((_, i) => show[i]).map((s) => (
     <SectionShell key={s.id} bg={s.bg} anchor={s.anchor} previewId={preview ? s.id : undefined}>
       {renderSection(s, lang, page, settings)}
     </SectionShell>

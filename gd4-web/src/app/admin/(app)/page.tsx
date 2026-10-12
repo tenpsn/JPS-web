@@ -24,10 +24,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/admin">) {
   const userBy = (id: number) => db.users.find((u) => u.id === id);
   const products = db.products;
   const pub = products.filter((p) => p.status === "pub").length;
-  const msgs = [...db.messages].sort((a, b) => b.date.localeCompare(a.date));
-  // นับข้อความที่ยังไม่ได้ตอบ ทั้งที่ยังไม่อ่านและที่อ่านแล้วแต่ยังไม่ตอบ
-  const newCount = msgs.filter((m) => m.status === "new").length;
-  const readCount = msgs.filter((m) => m.status === "read").length;
   const lastPage = db.pages.find((p) => p.id === db.lastEdit.page) ?? db.pages[0];
   const lastBy = userBy(db.lastEdit.userId);
 
@@ -35,10 +31,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/admin">) {
     {
       label: t.dash.cProducts, value: String(products.length), sub: `${t.prod.pub} ${pub} · ${t.prod.draft} ${products.length - pub}`,
       icon: "box", tone: "bg-soft text-blue", href: "/admin/products", show: can(user, "products"),
-    },
-    {
-      label: t.dash.cMsgs, value: String(newCount + readCount), sub: `${t.dash.unread} ${newCount} · ${t.dash.readNoReply} ${readCount}`,
-      icon: "inbox", tone: "bg-red-soft text-red", href: `/admin/inbox?filter=${newCount || !readCount ? "new" : "read"}`, show: can(user, "inbox"),
     },
     {
       label: t.dash.cPage, value: lastPage.title[lang], sub: `${lastBy?.name[lang] ?? "—"} · ${relDate(db.lastEdit.when, lang)}`,

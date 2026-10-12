@@ -62,7 +62,7 @@ export function CardImages({ images, start, alt, sizes }: { images: { id: string
     <div ref={ref} className="absolute inset-0">
       {images.map((im, k) => (
         <div key={im.id} aria-hidden={k !== i} className={`absolute inset-0 transition-opacity duration-500 ${k === i ? "opacity-100" : "opacity-0"}`}>
-          <Media img={im.src} alt={alt} sizes={sizes} />
+          <Media img={im.src} alt={alt} sizes={sizes} fit="contain" />
         </div>
       ))}
       <button type="button" onClick={() => go(i - 1)} aria-label={t.prevImg} className={`${arrow} left-2`}>

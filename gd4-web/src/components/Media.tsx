@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Img } from "@/types/site";
 
 /** แสดงรูปเต็มกรอบที่ครอบอยู่ ถ้ายังไม่มีรูปจริงจะแสดงกล่องลายทางแทน */
-export function Media({ img, alt, sizes = "(min-width: 1024px) 50vw, 100vw", label = true, dark = false, priority = false }: {
+export function Media({ img, alt, sizes = "(min-width: 1024px) 50vw, 100vw", label = true, dark = false, priority = false, fit = "cover" }: {
   img: Img;
   alt: string;
   sizes?: string;
@@ -10,9 +10,11 @@ export function Media({ img, alt, sizes = "(min-width: 1024px) 50vw, 100vw", lab
   /** วางบนพื้นสีกรมท่า */
   dark?: boolean;
   priority?: boolean;
+  /** contain แสดงรูปทั้งรูปโดยไม่ตัดขอบ ใช้กับรูปสินค้า */
+  fit?: "cover" | "contain";
 }) {
   if (img && img !== "placeholder") {
-    return <Image src={img} alt={alt} fill sizes={sizes} priority={priority} className="object-cover" />;
+    return <Image src={img} alt={alt} fill sizes={sizes} priority={priority} className={fit === "contain" ? "object-contain" : "object-cover"} />;
   }
   return (
     <div

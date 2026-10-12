@@ -36,8 +36,6 @@ export async function saveProduct(input: ProductInput, status: "pub" | "draft"):
     detail: { th: sanitizeHtml(str(input.detail?.th, 20000)), en: sanitizeHtml(str(input.detail?.en, 20000)) },
     images: (Array.isArray(input.images) ? input.images : []).slice(0, IMG_MAX).map((i) => ({ id: str(i.id, 64), src: safeSrc(i.src), label: ltext(i.label, 120) })),
     mainId: input.mainId ? str(input.mainId, 64) : null,
-    specs: (Array.isArray(input.specs) ? input.specs : []).slice(0, 50).map((s) => ({ id: str(s.id, 64), k: ltext(s.k, 120), v: str(s.v, 200) })),
-    pdf: input.pdf && /^\/media\/[0-9a-f-]{36}\.pdf$/.test(input.pdf.src) ? { name: str(input.pdf.name, 120), size: Number(input.pdf.size) || 0, src: input.pdf.src } : null,
   };
 
   const db = await readDb();
@@ -50,11 +48,11 @@ export async function saveProduct(input: ProductInput, status: "pub" | "draft"):
   const main = f.images.find((i) => i.id === f.mainId) ?? f.images[0];
   const record: Product = {
     id, sku: f.sku, name: f.name, short: f.short, detail: f.detail, category: f.category, status,
-    img: main?.src ?? null, images: f.images, specs: f.specs.filter((s) => s.k.th || s.k.en || s.v), pdf: f.pdf,
+    img: main?.src ?? null, images: f.images,
     updatedAt: nowStr(), updatedBy: user.id,
   };
 
-  // รูปเดิมที่ไม่อยู่ในคลังและไม่มีที่ไหนใช้แล้วจะถูกลบ ส่วน PDF ยังเก็บไว้ในคลังไฟล์
+  // รูปเดิมที่ไม่อยู่ในคลังและไม่มีที่ไหนใช้แล้วจะถูกลบ
   await mutateAndPrune((d) => {
     if (isNew) d.products.unshift(record);
     else d.products = d.products.map((p) => (p.id === id ? record : p));

@@ -10,8 +10,6 @@ import type { Category, Product } from "@/types/site";
 import { ProductCard } from "./ProductCard";
 import { btn, H2 } from "./shared";
 
-const TRY = ["PM-12", "AED-7", "UX-80"];
-
 /** อัปเดตหมวดและคำค้นในลิงก์ของหน้า โดยไม่ต้องโหลดหน้าใหม่ */
 function syncUrl(cat: string, q: string) {
   const sp = new URLSearchParams(window.location.search);
@@ -61,6 +59,8 @@ function CatalogView({ heading, products, categories, initialCat, initialQ }: {
       (!term || p.sku.toLowerCase().includes(term) || p.name.th.toLowerCase().includes(term) || p.name.en.toLowerCase().includes(term)),
   );
   const catName = (id: string) => tx(categories.find((c) => c.id === id)?.name, lang);
+  // คำค้นแนะนำใช้รหัสของสินค้าที่มีอยู่จริง
+  const tryList = products.slice(0, 3).map((p) => p.sku);
   const chips: [string, string][] = [["all", t.p.all], ...categories.map((c): [string, string] => [c.id, tx(c.name, lang)])];
 
   return (
@@ -114,9 +114,9 @@ function CatalogView({ heading, products, categories, initialCat, initialQ }: {
         </div>
       ) : term ? (
         <Empty icon="search" title={`${t.p.noResT} “${q.trim()}”`} desc={t.p.noResD}>
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          {tryList.length > 0 && <div className="flex flex-wrap items-center justify-center gap-2">
             <span className="text-sm text-ink3">{t.p.try}</span>
-            {TRY.map((x) => (
+            {tryList.map((x) => (
               <button
                 key={x}
                 type="button"
@@ -126,7 +126,7 @@ function CatalogView({ heading, products, categories, initialCat, initialQ }: {
                 {x}
               </button>
             ))}
-          </div>
+          </div>}
           <button
             type="button"
             onClick={() => update("all", "")}

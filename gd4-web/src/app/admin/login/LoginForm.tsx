@@ -20,7 +20,7 @@ function FieldError({ id, text }: { id: string; text?: string }) {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ name }: { name: string }) {
   const { t } = useAdmin();
   const [state, action, busy] = useActionState<LoginState, FormData>(login, undefined);
   const [show, setShow] = useState(false);
@@ -35,7 +35,7 @@ export function LoginForm() {
     <>
       <div className="flex flex-col gap-2">
         <h1 className="m-0 text-[28px] font-bold leading-[1.3]">{t.login.title}</h1>
-        <p className="m-0 text-[15.5px] leading-[1.6] text-ink2">{t.login.sub}</p>
+        <p className="m-0 text-[15.5px] leading-[1.6] text-ink2">{t.login.sub.replace("{name}", name)}</p>
       </div>
       <form action={action} noValidate className="flex flex-col gap-[18px]">
         <label className="flex flex-col gap-2">
