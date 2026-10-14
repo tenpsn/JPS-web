@@ -36,6 +36,9 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
   const router = useRouter();
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("list");
+  // บัญชีผู้ดูแลสูงสุดและตารางสิทธิ์จัดการได้เฉพาะผู้ดูแลสูงสุด และเปลี่ยนบทบาทของตัวเองไม่ได้
+  const myRole = users.find((u) => u.id === me)?.role;
+  const isSuper = myRole === "super";
   const [form, setForm] = useState<{ id: number | null; name: string; email: string; role: Role } | null>(null);
   const [errors, setErrors] = useState<UserErrors>({});
   const [del, setDel] = useState<PublicUser | null>(null);
@@ -45,7 +48,12 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
   const fail = (r: UserResult) => {
     if (r.ok) return false;
     if (r.errors) setErrors(r.errors);
-    toast("err", r.error === "noSelf" ? t.toast.noSelf : r.error === "lastSuper" ? (lang === "th" ? "ต้องมีผู้ดูแลสูงสุดที่ใช้งานอยู่อย่างน้อย 1 คน" : "At least one active super admin is required") : t.toast.fix);
+    const msg = {
+      noSelf: t.toast.noSelf,
+      lastSuper: lang === "th" ? "ต้องมีผู้ดูแลสูงสุดที่ใช้งานอยู่อย่างน้อย 1 คน" : "At least one active super admin is required",
+      superOnly: lang === "th" ? "เฉพาะผู้ดูแลสูงสุดที่จัดการบัญชีผู้ดูแลสูงสุดได้" : "Only a super admin can manage super admin accounts",
+    };
+    toast("err", r.error ? msg[r.error] : t.toast.fix);
     return true;
   };
   const run = (fn: () => Promise<UserResult>, okMsg: string | ((r: UserResult) => string), after?: (r: UserResult) => void) =>
@@ -132,13 +140,14 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
           me={me}
           canEdit={canEdit}
           canDel={canDel}
-          onEdit={(u) => (setErrors({}), setForm({ id: u.id, name: u.name[lang], email: u.email, role: u.role }))}
+          isSuper={isSuper}
+          onEdit={(u) => (setErrors({}), setForm({ id: u.id, name: u.name, email: u.email, role: u.role }))}
           onSuspend={(u) => run(() => setUserStatus(u.id, u.status === "suspended" ? "active" : "suspended"), u.status === "suspended" ? t.toast.unsuspended : t.toast.suspended)}
           onResend={(u) => run(() => resendInvite(u.id), () => t.users.linkReady, (r) => r.ok && r.inviteLink && setInvite(r.inviteLink))}
           onDelete={setDel}
         />
       )}
-      {tab === "roles" && <RolesTab perms={perms} users={users} canEdit={canEdit} />}
+      {tab === "roles" && <RolesTab perms={perms} users={users} canEdit={canEdit && isSuper} />}
       {tab === "log" && canViewLog && <LogTab activity={activity} users={users} canDel={canDelLog} />}
 
       {/* เพิ่มหรือแก้ไขผู้ดูแล */}
@@ -181,8 +190,8 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
             </label>
             <div className="flex flex-col gap-2" role="radiogroup" aria-label={t.users.role}>
               <span className={label}>{t.users.role}</span>
-              {ROLES.map((r) => (
-                <RadioCard key={r} on={form.role === r} onPick={() => setForm({ ...form, role: r })} title={t.users[r]} desc={t.users[`${r}D` as "superD"]} disabled={form.id === me && r !== "super" && form.role === "super"} />
+              {ROLES.filter((r) => isSuper || r !== "super").map((r) => (
+                <RadioCard key={r} on={form.role === r} onPick={() => setForm({ ...form, role: r })} title={t.users[r]} desc={t.users[`${r}D` as "superD"]} disabled={form.id === me && r !== myRole} />
               ))}
             </div>
             {!form.id && (
@@ -212,18 +221,19 @@ export function Users({ me, users, perms, activity, canEdit, canDel, canViewLog,
         onOk={() => del && run(() => deleteUser(del.id), t.toast.deleted, () => setDel(null))}
         title={t.cf.delUserTitle}
         text={t.cf.delUserText}
-        items={del ? [`${del.name[lang]} · ${del.email}`] : []}
+        items={del ? [`${del.name} · ${del.email}`] : []}
         okLabel={t.c.del}
       />
     </div>
   );
 }
 
-function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onDelete }: {
+function UserList({ users, me, canEdit, canDel, isSuper, onEdit, onSuspend, onResend, onDelete }: {
   users: PublicUser[];
   me: number;
   canEdit: boolean;
   canDel: boolean;
+  isSuper: boolean;
   onEdit: (u: PublicUser) => void;
   onSuspend: (u: PublicUser) => void;
   onResend: (u: PublicUser) => void;
@@ -236,7 +246,7 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
   const pg = Math.min(page, Math.max(1, Math.ceil(users.length / PAGE_SIZE)));
   const shown = users.slice((pg - 1) * PAGE_SIZE, pg * PAGE_SIZE);
   const last = (u: PublicUser) => (u.lastActive ? relDate(u.lastActive, lang) : t.users.sInvited);
-  const actions = (u: PublicUser, size: string) => (
+  const actions = (u: PublicUser, size: string) => (!isSuper && u.role === "super" ? null : (
     <>
       {canEdit && u.status === "invited" && (
         <button type="button" onClick={() => onResend(u)} aria-label={t.users.resend} title={t.users.resend} className={`${btn.icon} ${size}`}>
@@ -265,8 +275,8 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
         </button>
       )}
     </>
-  );
-  const avatar = (u: PublicUser, s: string) => <Avatar u={u} lang={lang} className={`text-[13px] ${s}`} />;
+  ));
+  const avatar = (u: PublicUser, s: string) => <Avatar u={u} className={`text-[13px] ${s}`} />;
 
   return (
     <>
@@ -290,7 +300,7 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
                     {avatar(u, "size-[42px]")}
                     <span className="flex min-w-0 flex-col gap-0.5">
                       <span className="flex items-center gap-2">
-                        <strong className="text-[15px] font-semibold">{u.name[lang]}</strong>
+                        <strong className="text-[15px] font-semibold">{u.name}</strong>
                         {u.id === me && <span className="rounded-full bg-soft px-[7px] py-px text-[11.5px] font-semibold text-blue">{t.users.you}</span>}
                       </span>
                       <span className="text-[13.5px] text-ink2">{u.email}</span>
@@ -321,7 +331,7 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
             <div className={`flex items-center gap-3 ${u.status === "suspended" ? "opacity-55" : ""}`}>
               {avatar(u, "size-11 text-sm")}
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <strong className="text-[15px]">{u.name[lang]}</strong>
+                <strong className="text-[15px]">{u.name}</strong>
                 <span className="overflow-hidden text-ellipsis text-[13px] text-ink2">{u.email}</span>
               </span>
             </div>
@@ -341,7 +351,7 @@ function UserList({ users, me, canEdit, canDel, onEdit, onSuspend, onResend, onD
 }
 
 function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]; canEdit: boolean }) {
-  const { t } = useAdmin();
+  const { lang, t } = useAdmin();
   const router = useRouter();
   const toast = useToast();
   const [role, setRole] = useState<Role>("editor");
@@ -480,7 +490,8 @@ function RolesTab({ perms, users, canEdit }: { perms: Perms; users: PublicUser[]
               onClick={() =>
                 start(async () => {
                   try {
-                    await savePerms(draft);
+                    const r = await savePerms(draft);
+                    if (!r.ok) return toast("err", lang === "th" ? "เฉพาะผู้ดูแลสูงสุดที่แก้สิทธิ์ได้" : "Only a super admin can change permissions");
                     toast("ok", t.toast.permSaved);
                     router.refresh();
                   } catch {

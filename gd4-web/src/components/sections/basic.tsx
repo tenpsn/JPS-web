@@ -192,18 +192,20 @@ export function Cards({ s, lang, dark }: P<CardsSection>) {
 
 export function Stats({ s, lang, dark }: P<StatsSection>) {
   const heading = tx(s.heading, lang);
-  // บนพื้นกรมท่าเป็นแถบตัวเลขมีเส้นแดง บนพื้นสว่างเป็นการ์ดแถวเดียวแบ่งช่องด้วยเส้น
-  if (!dark) {
+  // เลือกรูปแบบได้เอง ถ้ายังไม่ได้เลือก ใช้แถบบนพื้นกรมท่าและการ์ดบนพื้นสว่างแบบเดิม
+  const band = (s.style ?? (dark ? "band" : "card")) === "band";
+  const value = dark ? "text-white" : "text-primary";
+  if (!band) {
     return (
       <div className="mx-auto flex max-w-[1200px] flex-col gap-7 px-[var(--sec-px)] py-[calc(var(--sec-py)*.5)]">
         {heading && <H2 className="text-[calc(var(--fs-h2)*.8)]">{heading}</H2>}
-        <div className={`grid overflow-hidden rounded-[16px] border border-line bg-card shadow-card ${gridCols(s.items.length, { m: 2 })}`}>
+        <div className={`grid overflow-hidden rounded-[16px] border ${dark ? "border-white/15 bg-white/5" : "border-line bg-card shadow-card"} ${gridCols(s.items.length, { m: 2 })}`}>
           {s.items.map((c, i) => (
-            <div key={c.id} style={delay(i)} className="anim-up flex min-w-0 flex-col gap-1 border-l border-t border-line px-6 py-[22px] [margin:-1px_0_0_-1px]">
-              <span className="whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.05)] font-bold leading-[1.15] text-primary tabular-nums">
+            <div key={c.id} style={delay(i)} className={`anim-up flex min-w-0 flex-col gap-1 border-l border-t px-6 py-[22px] [margin:-1px_0_0_-1px] ${dark ? "border-white/15" : "border-line"}`}>
+              <span className={`whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.05)] font-bold leading-[1.15] tabular-nums ${value}`}>
                 <CountUp value={tx(c.value, lang)} />
               </span>
-              <span className="text-[calc(var(--fs-body)*.88)] leading-normal text-balance text-ink2">{tx(c.label, lang)}</span>
+              <span className={`text-[calc(var(--fs-body)*.88)] leading-normal text-balance ${ink2(dark)}`}>{tx(c.label, lang)}</span>
             </div>
           ))}
         </div>
@@ -217,7 +219,7 @@ export function Stats({ s, lang, dark }: P<StatsSection>) {
       <div className={`grid w-full gap-x-6 gap-y-8 ${gridCols(s.items.length, { m: 2 })}`}>
         {s.items.map((c, i) => (
           <div key={c.id} style={delay(i)} className="anim-up flex min-w-0 flex-col gap-1 border-l-[3px] border-accent-solid pl-[18px]">
-            <span className="whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.3)] font-bold leading-[1.15] text-white tabular-nums">
+            <span className={`whitespace-nowrap font-head text-[calc(var(--fs-h2)*1.3)] font-bold leading-[1.15] tabular-nums ${value}`}>
               <CountUp value={tx(c.value, lang)} />
             </span>
             <span className={`text-[calc(var(--fs-body)*.9)] leading-normal text-balance ${ink2(dark)}`}>{tx(c.label, lang)}</span>

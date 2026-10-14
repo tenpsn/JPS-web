@@ -30,9 +30,10 @@ export function cmsPage(id: string) {
     const header = page.sections.find((s) => s.type === "pageHeader");
     const description =
       tx(page.seo?.description, lang) || (header ? tx(header.sub, lang) : "") || tx(settings.seo.description, lang);
+    // หน้าแรกใช้ชื่อตามที่กรอกเป๊ะของภาษานั้น ไม่เติมชื่อเว็บต่อท้าย ถ้าภาษานั้นไม่ได้กรอกใช้ชื่อเว็บหลัก
+    const homeTitle = page.seo?.title?.[lang]?.trim();
     return {
-      // หน้าแรกใช้ชื่อเว็บหลัก
-      ...(page.slug === "/" ? {} : { title: tx(page.seo?.title, lang) || tx(page.title, lang) }),
+      ...(page.slug === "/" ? (homeTitle ? { title: { absolute: homeTitle } } : {}) : { title: tx(page.seo?.title, lang) || tx(page.title, lang) }),
       description,
       alternates: alternates(page.slug, lang),
       ...(page.seo?.image && page.seo.image !== "placeholder" ? { openGraph: { images: [page.seo.image] } } : {}),

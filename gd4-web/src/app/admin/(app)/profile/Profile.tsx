@@ -46,9 +46,9 @@ export function Profile({ user }: { user: Me }) {
       <div className="grid grid-cols-1 items-start gap-[18px] lg:grid-cols-[280px_minmax(0,1fr)]">
         {/* สรุปบัญชี ติดจอตอนเลื่อนบนคอมพิวเตอร์ */}
         <aside className="card flex flex-col items-center gap-3 px-5 py-6 text-center lg:sticky lg:top-2">
-          <Avatar u={user} lang={lang} className="size-24 text-[30px] ring-4 ring-soft" />
+          <Avatar u={user} className="size-24 text-[30px] ring-4 ring-soft" />
           <span className="flex flex-col gap-0.5">
-            <strong className="text-[17px] [overflow-wrap:anywhere]">{user.name[lang]}</strong>
+            <strong className="text-[17px] [overflow-wrap:anywhere]">{user.name}</strong>
             <span className="text-sm text-ink2 [overflow-wrap:anywhere]">{user.email}</span>
           </span>
           <span className="rounded-full bg-soft px-3 py-1 text-[13px] font-semibold text-blue">{t.roles[user.role]}</span>
@@ -72,13 +72,13 @@ function Details({ user }: { user: Me }) {
   const th = lang === "th";
   const toast = useToast();
   const router = useRouter();
-  const [name, setName] = useState(user.name[lang]);
+  const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState<string | null>(user.avatar ?? null);
   const [err, setErr] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pending, start] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
-  const dirty = name.trim() !== user.name[lang] || avatar !== (user.avatar ?? null);
+  const dirty = name.trim() !== user.name || avatar !== (user.avatar ?? null);
 
   // รูปโปรไฟล์อัปโหลดแยกจากคลังรูปของเว็บ ไม่แสดงในคลัง
   const pick = async (f: File | undefined) => {
@@ -117,7 +117,7 @@ function Details({ user }: { user: Me }) {
       </h2>
 
       <div className="flex flex-wrap items-center gap-4">
-        <Avatar u={{ id: user.id, ini: user.ini, avatar }} lang={lang} className="size-[72px] text-[24px]" />
+        <Avatar u={{ id: user.id, ini: user.ini, avatar }} className="size-[72px] text-[24px]" />
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className={`${btn.outline} min-h-10 text-sm`}>

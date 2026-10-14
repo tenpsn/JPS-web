@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { toInput } from "@/admin/productRules";
 import { can, requireUser } from "@/server/auth";
+import { sanitizeHtml, STORED_MAX } from "@/server/sanitize";
 import { readDb } from "@/server/store";
 import { ProductForm } from "../ProductForm";
 
@@ -18,7 +19,8 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
     <ProductForm
       // เริ่มฟอร์มใหม่เมื่อเปิดสินค้าตัวอื่น
       key={p.id}
-      initial={toInput(p)}
+      // กรองรายละเอียดก่อนส่งไปหน้าแก้ไข ซึ่งแสดงตัวอย่างเป็น HTML
+      initial={toInput(p.detail ? { ...p, detail: { th: sanitizeHtml(p.detail.th, STORED_MAX), en: sanitizeHtml(p.detail.en, STORED_MAX) } } : p)}
       categories={db.categories}
       others={db.products.map(({ id, sku }) => ({ id, sku }))}
       meta={{ updatedAt: p.updatedAt, byName: by?.name }}

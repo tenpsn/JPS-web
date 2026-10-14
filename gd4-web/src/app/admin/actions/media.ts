@@ -2,8 +2,7 @@
 
 import { logActivity } from "@/server/activity";
 import { can, getCurrentUser, type CurrentUser } from "@/server/auth";
-import { usedText } from "@/server/cleanup";
-import { deleteUpload } from "@/server/files";
+import { deleteUnused, usedText } from "@/server/cleanup";
 import { mutate, readDb } from "@/server/store";
 
 /** ใช้สิทธิ์ชุดเดียวกับการอัปโหลด */
@@ -15,7 +14,7 @@ export async function listMedia() {
   if (!(await getCurrentUser())) throw new Error("Forbidden");
   const db = await readDb();
   const used = usedText(db);
-  return db.media.map(({ src, name, size, when }) => ({ src, name, size, when, used: used.includes(src) }));
+  return db.media.map(({ src, name, size }) => ({ src, name, size, used: used.includes(src) }));
 }
 
 /** ลบรูปออกจากคลังและลบไฟล์ทิ้ง ถ้ารูปยังถูกใช้อยู่ที่ไหนจะไม่ลบ */
@@ -33,7 +32,7 @@ export async function deleteMedia(src: string): Promise<{ ok: true } | { ok: fal
     return "ok" as const;
   });
   if (result === "inUse") return { ok: false, error: "inUse" };
-  if (result === "ok") await deleteUpload(src);
+  if (result === "ok") await deleteUnused([src]);
   return { ok: true };
 }
 

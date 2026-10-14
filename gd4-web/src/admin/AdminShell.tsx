@@ -160,9 +160,9 @@ export function AdminShell({ user, areas, brand, children }: {
             aria-current={active("/admin/profile") ? "page" : undefined}
             className={`flex min-h-12 items-center gap-3 rounded-full px-1.5 text-side-ink hover:bg-white/[.06] hover:text-white ${active("/admin/profile") ? "bg-white/[.1]" : ""}`}
           >
-            <Avatar u={user} lang={lang} className="size-[38px] text-[13px]" />
+            <Avatar u={user} className="size-[38px] text-[13px]" />
             <span className={`flex min-w-0 flex-col leading-[1.25] md2:hidden ${collapsed ? "" : "xl2:flex"}`}>
-              <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white">{user.name[lang]}</strong>
+              <strong className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-white">{user.name}</strong>
               <span className="text-[12.5px] text-side-ink2">{t.roles[user.role]}</span>
             </span>
           </Link>

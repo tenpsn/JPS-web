@@ -92,6 +92,8 @@ export type CardsSection = Base<"cards"> & {
 
 export type StatsSection = Base<"stats"> & {
   heading: LText;
+  /** แถบตัวเลขมีเส้นแดง หรือการ์ดแถวเดียวแบ่งช่องด้วยเส้น ใช้ได้กับทุกสีพื้นหลัง */
+  style?: "band" | "card";
   items: Item<{ value: LText; label: LText }>[];
 };
 
@@ -240,7 +242,8 @@ export type SiteSettings = {
 
 export type Category = { id: string; name: LText };
 
-export type ProductImage = { id: string; src: Img; label: LText };
+/** label คือชื่อไฟล์รูป ใช้เป็นข้อความแทนรูป */
+export type ProductImage = { id: string; src: Img; label: string };
 
 export type Product = {
   id: string;

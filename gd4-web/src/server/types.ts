@@ -23,9 +23,10 @@ export const superOnly = (a: Area, x: Action) => a === "activity" && x === "del"
 
 export type AdminUser = {
   id: number;
-  name: LText;
+  /** ชื่อนามสกุล ใช้ชื่อเดียวกันทั้งหน้าไทยและอังกฤษ */
+  name: string;
   /** ตัวอักษรย่อที่แสดงในรูปโปรไฟล์ เมื่อยังไม่ได้ใส่รูป */
-  ini: LText;
+  ini: string;
   /** รูปโปรไฟล์ที่ผู้ใช้อัปโหลดเอง */
   avatar?: string | null;
   email: string;
@@ -54,7 +55,6 @@ export type Activity = {
 };
 
 export type DB = {
-  version: 1;
   settings: SiteSettings;
   pages: Page[];
   categories: Category[];
@@ -70,6 +70,8 @@ export type DB = {
   draft: (Working & { userId: number; when: string }) | null;
   /** เลขรุ่นงานร่างที่เพิ่มทุกครั้งที่มีการเปลี่ยน ใช้ตรวจว่ามีคนแก้ทับกันหรือไม่ */
   draftRev: number;
+  /** รหัสถัดไปของผู้ใช้และประวัติ เพิ่มขึ้นอย่างเดียว รหัสที่ลบไปแล้วจึงไม่ถูกใช้ซ้ำ */
+  nextIds: { user: number; activity: number };
 };
 
 /** ส่วนที่ใช้ทั้งเว็บ ซึ่งแก้ได้ในแท็บทั้งเว็บของหน้าแก้ไขเนื้อหา */
@@ -78,4 +80,5 @@ export type GlobalContent = Pick<SiteSettings, "menu" | "socials" | "footer" | "
 /** ทุกอย่างที่หน้าแก้ไขเนื้อหาและธีมแก้ได้ ทั้งฉบับที่เผยแพร่และฉบับร่าง */
 export type Working = { pages: Page[]; design: Design; global: GlobalContent };
 
-export type MediaItem = { src: string; name: string; size: number; when: string; userId: number };
+/** seq คือลำดับที่อัปโหลด รูปที่ใหม่กว่าได้เลขมากกว่า */
+export type MediaItem = { src: string; seq: number; name: string; size: number };

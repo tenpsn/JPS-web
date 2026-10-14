@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import path from "node:path";
+import type { PoolClient } from "pg";
 import { ensureSchema, pool } from "./db";
 
 /**
@@ -35,32 +36,53 @@ function sniff(buf: Buffer): string | null {
 }
 
 export type Saved = { src: string; name: string; size: number };
+/** reused บอกว่าใช้ไฟล์เดิมที่เนื้อหาเหมือนกัน ไม่ได้เก็บไฟล์ใหม่ */
+type SaveResult = Saved & { reused: boolean };
 
-export async function saveUpload(file: File, kind: UploadKind): Promise<Saved | { error: "type" | "size" }> {
+/** อ่านเนื้อไฟล์และตรวจชนิดจริงของไฟล์ */
+async function readFile(file: File) {
+  const buf = Buffer.from(await file.arrayBuffer());
+  return { buf, type: sniff(buf), hash: createHash("sha256").update(buf).digest("hex") };
+}
+
+const insertSql = "insert into uploads (name, type, size, body, hash, owner) values ($1, $2, $3, $4, $5, $6) on conflict (name) do nothing";
+
+export async function saveUpload(file: File, kind: UploadKind, owner: number): Promise<SaveResult | { error: "type" | "size" }> {
   const rule = RULES[kind];
   if (file.size > rule.max) return { error: "size" };
-  const buf = Buffer.from(await file.arrayBuffer());
-  const type = sniff(buf);
+  const { buf, type, hash } = await readFile(file);
   const ext = type ? rule.types[type] : undefined;
   if (!ext) return { error: "type" };
   // เก็บชื่อไฟล์เดิมไว้แสดงผล โดยตัดส่วนที่เป็นที่อยู่โฟลเดอร์ออก
   const name = (fallback: string) => path.basename(file.name).replace(/[^\w.\-ก-๙ ]+/g, "_").slice(0, 120) || fallback;
-  const hash = createHash("sha256").update(buf).digest("hex");
   await ensureSchema();
-  // ไฟล์เนื้อหาเดียวกันที่เคยอัปโหลดแล้วใช้ไฟล์เดิม เลือกไฟล์แรกสุดเสมอเพื่อให้ได้ลิงก์เดียวกันทุกครั้ง
-  const { rows } = await pool().query<{ name: string }>("select name from uploads where hash = $1 and type = $2 order by created_at, name limit 1", [hash, type]);
-  if (rows[0]) return { src: `/media/${rows[0].name}`, name: name(rows[0].name), size: buf.length };
+  // รูปและไอคอนเว็บเข้าคลังรูปซึ่งไม่ถูกลบเอง จึงใช้ไฟล์เดิมที่เนื้อหาเหมือนกันได้
+  // ไฟล์ชนิดอื่นอาจถูกลบตอนไม่มีที่ไหนใช้ จึงเก็บเป็นไฟล์ใหม่ทุกครั้ง
+  if (kind === "image" || kind === "icon") {
+    const { rows } = await pool().query<{ name: string }>("select name from uploads where hash = $1 and type = $2 order by created_at, name limit 1", [hash, type]);
+    if (rows[0]) return { src: `/media/${rows[0].name}`, name: name(rows[0].name), size: buf.length, reused: true };
+  }
   const stored = `${randomUUID()}.${ext}`;
-  await pool().query("insert into uploads (name, type, size, body, hash, label) values ($1, $2, $3, $4, $5, $6)", [stored, type, buf.length, buf, hash, name(stored)]);
-  return { src: `/media/${stored}`, name: name(stored), size: buf.length };
+  await pool().query(insertSql, [stored, type, buf.length, buf, hash, kind === "avatar" ? owner : null]);
+  return { src: `/media/${stored}`, name: name(stored), size: buf.length, reused: false };
 }
 
-/** ลบไฟล์ที่อัปโหลดไว้ตามลิงก์ src */
-export async function deleteUpload(src: string): Promise<void> {
+/** ใส่เนื้อไฟล์กลับ ถ้าไฟล์เดิมที่ใช้ซ้ำถูกลบไประหว่างที่กำลังอัปโหลด ส่ง c มาเมื่อทำในล็อกของการบันทึก */
+export async function restoreUpload(src: string, file: File, c: Pick<PoolClient, "query"> = pool()): Promise<void> {
   const name = src.replace(/^\/media\//, "");
   if (!UPLOAD_NAME.test(name)) return;
-  await ensureSchema();
-  await pool().query("delete from uploads where name = $1", [name]);
+  if ((await c.query("select 1 from uploads where name = $1", [name])).rows.length) return;
+  const { buf, type, hash } = await readFile(file);
+  await c.query(insertSql, [name, type, buf.length, buf, hash, null]);
+}
+
+/** ขนาดคำขออัปโหลดใหญ่สุด เท่ากับไฟล์ใหญ่สุดที่รับได้บวกส่วนหัวของฟอร์ม ใช้ปฏิเสธก่อนอ่านทั้งก้อน */
+export const MAX_REQUEST = Math.max(...Object.values(RULES).map((r) => r.max)) + 64 * 1024;
+
+/** รูปโปรไฟล์อื่นของผู้ใช้คนนี้ นอกจากรูปที่ระบุ ใช้หารูปที่อัปโหลดแล้วไม่ได้บันทึก */
+export async function otherAvatars(owner: number, keep: string): Promise<string[]> {
+  const { rows } = await pool().query<{ name: string }>("select name from uploads where owner = $1 and name <> $2", [owner, keep.replace(/^\/media\//, "")]);
+  return rows.map((r) => `/media/${r.name}`);
 }
 
 export const MIME: Record<string, string> = {

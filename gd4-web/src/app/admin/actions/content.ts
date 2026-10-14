@@ -9,27 +9,26 @@ import { mutateAndPrune } from "@/server/cleanup";
 import { cleanDesign, cleanGlobal, cleanPage, globalOf, working } from "@/server/content";
 import { mutate, nowStr, readDb } from "@/server/store";
 import type { Working } from "@/server/types";
-import type { LText } from "@/types/site";
+import type { Page } from "@/types/site";
 
 
 /**
  * บันทึกงานที่กำลังแก้เป็นฉบับร่าง ใช้กับการดูตัวอย่างและปุ่มบันทึกร่าง
  * แก้เนื้อหาต้องมีสิทธิ์แก้เนื้อหา แก้ธีมต้องมีสิทธิ์แก้ดีไซน์
  */
-export type SaveDraftResult = { ok: true; rev: number } | { ok: false; conflict: true; who: LText; when: string };
+export type SaveDraftResult = { ok: true; rev: number } | { ok: false; conflict: true; who: string; when: string };
 
 export async function saveDraft(input: Working, baseRev: number): Promise<SaveDraftResult> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Forbidden");
   const db = await readDb();
-  // มีคนอื่นหรือแท็บอื่นแก้ร่างไปแล้วหลังจากเปิดหน้านี้ จึงไม่บันทึกทับ
-  if (Number(baseRev) !== db.draftRev) {
-    const by = db.users.find((u) => u.id === db.draft?.userId);
-    return { ok: false, conflict: true, who: by?.name ?? { th: "—", en: "—" }, when: db.draft?.when ?? "" };
-  }
+  // จำเลขรุ่นร่างตอนอ่านไว้ เพราะข้อมูลที่อ่านได้เป็นชุดเดียวกับที่ mutate แก้ ค่าจะเปลี่ยนตามกัน
+  const readRev = db.draftRev;
   const cur = working(db);
 
-  const pages = (Array.isArray(input?.pages) ? input.pages : cur.pages).slice(0, 40).map((p) => cleanPage(p, cur.pages.find((x) => x.id === p?.id))).filter(Boolean) as Working["pages"];
+  const cleaned = (Array.isArray(input?.pages) ? input.pages : cur.pages).slice(0, 40).map((p) => cleanPage(p, cur.pages.find((x) => x.id === p?.id))).filter(Boolean) as Working["pages"];
+  // หน้าที่รหัสซ้ำเก็บไว้หน้าเดียว ไม่อย่างนั้นจะบันทึกร่างได้แต่เผยแพร่ไม่ได้
+  const pages = cleaned.filter((p, i) => cleaned.findIndex((x) => x.id === p.id) === i);
   // หน้าระบบจะไม่ถูกลบทิ้งเด็ดขาด
   for (const sp of cur.pages.filter((p) => p.system)) if (!pages.some((p) => p.id === sp.id)) pages.push(sp);
   const next: Working = { pages, design: cleanDesign(input?.design), global: cleanGlobal(input?.global, cur.global) };
@@ -39,11 +38,16 @@ export async function saveDraft(input: Working, baseRev: number): Promise<SaveDr
   if (contentChanged && !can(user, "content", "edit")) throw new Error("Forbidden");
   if (designChanged && !can(user, "design", "edit")) throw new Error("Forbidden");
 
-  const rev = await mutate((d) => {
+  // ตรวจในล็อก ถ้ามีคนอื่นหรือแท็บอื่นแก้ร่างไปแล้วหลังจากเปิดหน้านี้ จะไม่บันทึกทับ
+  // ร่างที่ยังไม่เปลี่ยนแปลว่าข้อมูลที่ใช้ตรวจสิทธิ์ด้านบนยังเป็นชุดเดียวกัน
+  return mutate((d): SaveDraftResult => {
+    if (Number(baseRev) !== d.draftRev || d.draftRev !== readRev) {
+      const by = d.users.find((u) => u.id === d.draft?.userId);
+      return { ok: false, conflict: true, who: by?.name ?? "—", when: d.draft?.when ?? "" };
+    }
     d.draft = { ...next, userId: user.id, when: nowStr() };
-    return ++d.draftRev;
+    return { ok: true, rev: ++d.draftRev };
   });
-  return { ok: true, rev };
 }
 
 export async function discardDraft() {
@@ -61,19 +65,20 @@ export async function discardDraft() {
 export async function publish(): Promise<{ ok: boolean; error?: "forbidden"; rev?: number }> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Forbidden");
-  const db = await readDb();
-  if (!db.draft) return { ok: true, rev: db.draftRev };
-  const w = working(db);
-  const contentChanged = !same(w.pages, db.pages) || !same(w.global, globalOf(db.settings));
-  const designChanged = !same(w.design, db.design);
-  if ((contentChanged && !can(user, "content", "publish")) || (designChanged && !can(user, "design", "publish") && !can(user, "content", "publish"))) {
-    return { ok: false, error: "forbidden" };
-  }
 
   // ไฟล์ที่ฉบับเผยแพร่ใหม่ไม่ได้ใช้แล้ว เช่น ฟอนต์ที่ถูกเปลี่ยน จะถูกลบ ไม่ลบระหว่างบันทึกร่างเพราะยังกดเลิกทำได้
-  await mutateAndPrune((d) => {
-    const draft = d.draft!;
-    const { pages, menu } = alignMenu(draft.pages, draft.global.menu);
+  // ตรวจร่างและสิทธิ์ในล็อก จะได้เผยแพร่ร่างชุดเดียวกับที่ตรวจสิทธิ์
+  const result = await mutateAndPrune((d): "ok" | "none" | "forbidden" => {
+    const draft = d.draft;
+    if (!draft) return "none";
+    // SEO ของแต่ละหน้าแก้ที่หน้าตั้งค่าและเก็บในฉบับเผยแพร่เท่านั้น จึงใช้ค่าล่าสุดแทนค่าที่ติดมากับร่าง
+    const draftPages = withLiveSeo(draft.pages, d.pages);
+    const contentChanged = !same(draftPages, d.pages) || !same(draft.global, globalOf(d.settings));
+    const designChanged = !same(draft.design, d.design);
+    if ((contentChanged && !can(user, "content", "publish")) || (designChanged && !can(user, "design", "publish") && !can(user, "content", "publish"))) {
+      return "forbidden";
+    }
+    const { pages, menu } = alignMenu(draftPages, draft.global.menu);
     const global = { ...draft.global, menu };
     // เทียบกับฉบับที่เผยแพร่อยู่ซึ่งจัดสวิตช์กับเมนูแบบเดียวกัน จะได้ไม่นับหน้าที่ไม่ได้แก้จริง
     const live = alignMenu(d.pages, d.settings.menu);
@@ -92,7 +97,19 @@ export async function publish(): Promise<{ ok: boolean; error?: "forbidden"; rev
     d.lastEdit = { page: changed.id, userId: user.id, when: nowStr() };
     d.draft = null;
     d.draftRev++;
+    return "ok";
   });
-  revalidatePath("/", "layout");
+  if (result === "forbidden") return { ok: false, error: "forbidden" };
+  if (result === "ok") revalidatePath("/", "layout");
   return { ok: true, rev: (await readDb()).draftRev };
+}
+
+/** ใส่ SEO ของหน้าจากฉบับเผยแพร่ หน้าที่มีแค่ในร่างจะไม่มี SEO */
+function withLiveSeo(pages: Page[], live: Page[]): Page[] {
+  return pages.map((p) => {
+    const out: Page = { ...p };
+    delete out.seo;
+    const seo = live.find((x) => x.id === p.id)?.seo;
+    return seo ? { ...out, seo } : out;
+  });
 }

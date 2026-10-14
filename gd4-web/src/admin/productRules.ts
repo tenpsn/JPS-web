@@ -41,7 +41,7 @@ export function toInput(p: Product | null): ProductInput {
       images: [], mainId: null,
     };
   }
-  const images = p.images ?? (p.img ? [{ id: "img1", src: p.img, label: { th: p.sku, en: p.sku } }] : []);
+  const images = p.images ?? (p.img ? [{ id: "img1", src: p.img, label: p.sku }] : []);
   return {
     id: p.id, sku: p.sku, category: p.category, status: p.status, name: { ...p.name },
     short: p.short ?? { th: "", en: "" }, detail: p.detail ?? { th: "", en: "" }, images,

@@ -7,11 +7,11 @@ import { same } from "@/lib/same";
 import { logActivity } from "@/server/activity";
 import { assertCan } from "@/server/auth";
 import { mutateAndPrune } from "@/server/cleanup";
-import { sanitizeHtml } from "@/server/sanitize";
+import { sanitizeHtml, STORED_MAX } from "@/server/sanitize";
 import { mutate, nowStr, readDb } from "@/server/store";
+import { str } from "@/server/content";
 import type { Category, LText, Product } from "@/types/site";
 
-const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 const ltext = (v: Partial<LText> | undefined, max: number): LText => ({ th: str(v?.th, max), en: str(v?.en, max) });
 /** รับเฉพาะรูปที่อัปโหลดในระบบเรา รูปตัวอย่าง หรือไม่มีรูป */
 const safeSrc = (s: unknown) => (typeof s === "string" && (/^\/media\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(s) || s === "placeholder") ? s : null);
@@ -33,8 +33,8 @@ export async function saveProduct(input: ProductInput, status: "pub" | "draft"):
     status,
     name: ltext(input.name, 200),
     short: ltext(input.short, 400),
-    detail: { th: sanitizeHtml(str(input.detail?.th, 20000)), en: sanitizeHtml(str(input.detail?.en, 20000)) },
-    images: (Array.isArray(input.images) ? input.images : []).slice(0, IMG_MAX).map((i) => ({ id: str(i.id, 64), src: safeSrc(i.src), label: ltext(i.label, 120) })),
+    detail: { th: sanitizeHtml(str(input.detail?.th, STORED_MAX), STORED_MAX), en: sanitizeHtml(str(input.detail?.en, STORED_MAX), STORED_MAX) },
+    images: (Array.isArray(input.images) ? input.images : []).slice(0, IMG_MAX).map((i) => ({ id: str(i.id, 64), src: safeSrc(i.src), label: str(i.label, 120) })),
     mainId: input.mainId ? str(input.mainId, 64) : null,
   };
 

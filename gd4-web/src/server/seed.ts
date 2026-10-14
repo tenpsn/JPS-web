@@ -1,13 +1,14 @@
-/** ข้อมูลตั้งต้นที่ใช้ตอนฐานข้อมูลยังว่างและไม่มีไฟล์ mock-db.json ในโฟลเดอร์ .data
- * ผู้ใช้ตัวอย่างเข้าระบบด้วยรหัสผ่านด้านล่าง ใช้ตอนพัฒนาเท่านั้น และเก็บลงฐานข้อมูลแบบเข้ารหัสแล้ว */
+/** ข้อมูลตั้งต้นที่ใช้ตอนฐานข้อมูลยังว่าง
+ * ตอนพัฒนามีผู้ใช้ตัวอย่างที่ใช้รหัสผ่านด้านล่าง เว็บจริงสร้างผู้ดูแลคนแรกจาก ADMIN_EMAIL และ ADMIN_PASSWORD แทน */
 import { DEFAULT_DESIGN } from "@/content/design";
 import { CATEGORIES, PRODUCTS } from "@/content/products";
 import { PAGES, SETTINGS } from "@/content/site";
 import type { LText } from "@/types/site";
+import { initials } from "@/lib/initials";
 import { hashPassword } from "./password";
 import { AREAS, type Action, type Area, type DB, type Perms, type Role } from "./types";
 
-const DEV_PASSWORD = "gd4-demo-2026";
+export const DEV_PASSWORD = "gd4-demo-2026";
 
 const L = (th: string, en: string): LText => ({ th, en });
 const P = (view: number, edit: number, del: number, publish: number): Record<Action, boolean> => ({
@@ -34,27 +35,53 @@ const UPDATED: Record<string, [string, number]> = {
 };
 
 
+/** ผู้ดูแลคนแรกของเว็บจริง รหัสผ่านต้องยาว 8 ตัวขึ้นไปและมีทั้งตัวอักษรและตัวเลข เหมือนตอนรับคำเชิญ */
+function firstAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "";
+  const password = process.env.ADMIN_PASSWORD ?? "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password)) {
+    throw new Error("Set ADMIN_EMAIL and ADMIN_PASSWORD (8+ characters with letters and numbers) to create the first admin on an empty production database.");
+  }
+  const name = process.env.ADMIN_NAME?.trim() || email.split("@")[0];
+  return { id: 1, name, ini: initials(name), email, role: "super" as const, status: "active" as const, lastActive: null, passwordHash: hashPassword(password) };
+}
+
 export function createSeed(): DB {
+  // เว็บจริงไม่สร้างผู้ใช้ตัวอย่าง เพราะรหัสผ่านของผู้ใช้ตัวอย่างเปิดเผยอยู่ในโค้ด
+  if (process.env.NODE_ENV === "production") {
+    const demo = createDemoSeed();
+    return {
+      ...demo,
+      products: demo.products.map((p) => ({ ...p, updatedAt: undefined, updatedBy: undefined })),
+      users: [firstAdmin()],
+      activity: [],
+      lastEdit: { ...demo.lastEdit, userId: 1 },
+      nextIds: { user: 2, activity: 1 },
+    };
+  }
+  return createDemoSeed();
+}
+
+function createDemoSeed(): DB {
   const hash = hashPassword(DEV_PASSWORD);
-  const user = (id: number, th: string, en: string, iniTh: string, iniEn: string, email: string, role: Role, lastActive: string | null, status: "active" | "suspended" | "invited" = "active") => ({
-    id, name: L(th, en), ini: L(iniTh, iniEn), email, role, status, lastActive, passwordHash: status === "invited" ? null : hash,
+  const user = (id: number, name: string, ini: string, email: string, role: Role, lastActive: string | null, status: "active" | "suspended" | "invited" = "active") => ({
+    id, name, ini, email, role, status, lastActive, passwordHash: status === "invited" ? null : hash,
   });
 
   let a = 0;
   const act = (userId: number, actTh: string, actEn: string, xTh: string, xEn: string, when: string) => ({ id: ++a, userId, action: L(actTh, actEn), target: L(xTh, xEn), when });
 
   return {
-    version: 1,
     settings: structuredClone(SETTINGS),
     pages: structuredClone(PAGES),
     categories: structuredClone(CATEGORIES),
     products: PRODUCTS.map((p) => ({ ...structuredClone(p), updatedAt: UPDATED[p.sku]?.[0], updatedBy: UPDATED[p.sku]?.[1] })),
     users: [
-      user(1, "สมชาย วงศ์ใหญ่", "Somchai Wongyai", "สว", "SW", "somchai@gdfourmedical.com", "super", "2026-10-02 11:30"),
-      user(2, "นภา ศรีสุข", "Napa Srisuk", "นศ", "NS", "napa@gdfourmedical.com", "editor", "2026-10-02 08:15"),
-      user(3, "ธนา รุ่งเรือง", "Thana Rungruang", "ธร", "TR", "thana@gdfourmedical.com", "products", "2026-09-29 14:22"),
-      user(4, "พิมพ์ชนก แก้วมณี", "Pimchanok Kaewmanee", "พก", "PK", "pimchanok@gdfourmedical.com", "viewer", "2026-09-20 10:05", "suspended"),
-      user(5, "กฤต ศักดิ์ดี", "Krit Sakdee", "กศ", "KS", "krit@gdfourmedical.com", "editor", null, "invited"),
+      user(1, "สมชาย วงศ์ใหญ่", "สว", "somchai@gdfourmedical.com", "super", "2026-10-02 11:30"),
+      user(2, "นภา ศรีสุข", "นศ", "napa@gdfourmedical.com", "editor", "2026-10-02 08:15"),
+      user(3, "ธนา รุ่งเรือง", "ธร", "thana@gdfourmedical.com", "products", "2026-09-29 14:22"),
+      user(4, "พิมพ์ชนก แก้วมณี", "พก", "pimchanok@gdfourmedical.com", "viewer", "2026-09-20 10:05", "suspended"),
+      user(5, "กฤต ศักดิ์ดี", "กศ", "krit@gdfourmedical.com", "editor", null, "invited"),
     ],
     perms: structuredClone(DEFAULT_PERMS),
     activity: [
@@ -71,5 +98,6 @@ export function createSeed(): DB {
     draft: null,
     draftRev: 0,
     media: [],
+    nextIds: { user: 6, activity: a + 1 },
   };
 }

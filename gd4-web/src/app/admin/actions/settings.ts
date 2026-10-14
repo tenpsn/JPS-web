@@ -5,9 +5,9 @@ import { logActivity } from "@/server/activity";
 import { assertCan } from "@/server/auth";
 import { mutateAndPrune } from "@/server/cleanup";
 import { mutate } from "@/server/store";
+import { str } from "@/server/content";
 import type { Img, LText } from "@/types/site";
 
-const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 const lt = (v: Partial<LText> | undefined, max: number): LText => ({ th: str(v?.th, max).trim(), en: str(v?.en, max).trim() });
 const img = (s: unknown): Img => (typeof s === "string" && /^\/media\/[0-9a-f-]{36}\.(jpg|png|webp)$/.test(s) ? s : null);
 /** favicon รับไฟล์ ICO ได้ด้วย */

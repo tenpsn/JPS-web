@@ -1,238 +1,97 @@
 import "server-only";
 import type { PoolClient } from "pg";
-import { TYPES } from "@/admin/sectionSchema";
-import { LIST_TABLES, pool, tx, type ListTable } from "./db";
-import { importLegacy } from "./legacy";
-import { hashPassword } from "./password";
-import { CATALOG_HELP, CONTACT_PATHS, FAQ_BTN, FAQ_HELP } from "@/content/site";
-import type { LText } from "@/types/site";
-import { createSeed, DEFAULT_PERMS } from "./seed";
+import { pool, tx } from "./db";
+import { createSeed } from "./seed";
+import { fromRows, selectSql, TABLES, type Row } from "./tables";
 import type { DB } from "./types";
 
 /** ข้อมูลทั้งหมดอยู่ใน PostgreSQL ทุกการอ่านเขียนผ่าน readDb และ mutate
  * จำข้อมูลชุดล่าสุดไว้ในหน่วยความจำ และโหลดใหม่เมื่อเลขรุ่นในฐานข้อมูลเปลี่ยน */
 
-/** เพิ่มเลขนี้ทุกครั้งที่ migrate รู้จักข้อมูลใหม่ เพื่อให้ข้อมูลในฐานข้อมูลถูกปรับตามครั้งเดียว */
-const MIGRATE_REV = 22;
-
 // เลขล็อกของฐานข้อมูล ใช้ให้การบันทึกทำทีละครั้งแม้เปิดเซิร์ฟเวอร์หลายตัว
 const LOCK = 4204001;
 
-/** วิธีหารหัสของแต่ละรายการ ใช้เป็นคีย์ของแถวในตาราง */
-const KEY = {
-  users: (x: DB["users"][number]) => String(x.id),
-  pages: (x: DB["pages"][number]) => x.id,
-  categories: (x: DB["categories"][number]) => x.id,
-  products: (x: DB["products"][number]) => x.id,
-  activity: (x: DB["activity"][number]) => String(x.id),
-  media: (x: DB["media"][number]) => x.src,
-} satisfies Record<ListTable, (x: never) => string>;
-
-/** ค่าที่มีชุดเดียว เก็บในตาราง meta */
-const SINGLES = ["version", "settings", "perms", "lastEdit", "design", "draft", "draftRev"] as const satisfies readonly Exclude<keyof DB, ListTable>[];
-
-type Row = { pos: number; json: string };
-type Cache = { db: DB; rev: number; snap: Map<string, Row> };
+/** แถวที่อ่านหรือบันทึกครั้งล่าสุด แยกตามชื่อตาราง เก็บคีย์ไว้ใช้ลบ และข้อความของทั้งแถวไว้ใช้ดูว่าเปลี่ยนหรือไม่
+ * ค่าของแถวมีเฉพาะระหว่างบันทึก ตารางที่แถวไม่เคยถูกแก้ไม่ต้องเก็บข้อความ */
+type SnapRow = { key: unknown[]; values?: unknown[]; json: string };
+type Snap = Map<string, Map<string, SnapRow>>;
+type Cache = { db: DB; rev: number; snap: Snap };
 
 const g = globalThis as unknown as { __gd4cache?: Cache; __gd4loading?: Promise<Cache>; __gd4ready?: Promise<void> };
 
+/** แปลงข้อมูลทั้งหมดเป็นแถวของทุกตาราง พร้อมคีย์ที่ใช้เทียบกับครั้งก่อน
+ * withValues เก็บค่าของแถวไว้ด้วย ใช้ตอนบันทึก */
+function snapshot(db: DB, withValues = false): Snap {
+  const snap: Snap = new Map();
+  for (const t of TABLES) {
+    const rows = new Map<string, SnapRow>();
+    for (const row of t.rows(db)) {
+      // เวลาที่ว่างเก็บเป็น null เพราะคอลัมน์เวลารับข้อความว่างไม่ได้
+      const values = t.cols.map(([c, type]) => (type === "timestamp" && row[c] === "" ? null : (row[c] ?? null)));
+      const key = t.key.map((k) => row[k]);
+      const id = JSON.stringify(key);
+      if (rows.has(id)) throw new Error(`Duplicate key ${id} in ${t.name}`);
+      rows.set(id, { key, values: withValues ? values : undefined, json: t.appendOnly ? "" : JSON.stringify(values) });
+    }
+    snap.set(t.name, rows);
+  }
+  return snap;
+}
+
 async function load(c: PoolClient): Promise<Cache> {
-  const meta = new Map((await c.query<{ key: string; value: unknown }>("select key, value from meta")).rows.map((r) => [r.key, r.value]));
-  const db: Record<string, unknown> = {};
-  const snap = new Map<string, Row>();
-  for (const k of SINGLES) {
-    db[k] = meta.get(k) ?? null;
-    snap.set(`meta:${k}`, { pos: 0, json: JSON.stringify(db[k]) });
-  }
-  for (const t of LIST_TABLES) {
-    const { rows } = await c.query<{ id: string; pos: number; data: unknown }>(`select id, pos, data from ${t} order by pos`);
-    db[t] = rows.map((r) => r.data);
-    for (const r of rows) snap.set(`${t}:${r.id}`, { pos: r.pos, json: JSON.stringify(r.data) });
-  }
-  return { db: db as DB, rev: Number(meta.get("_rev") ?? 0), snap };
+  const rows: Record<string, Row[]> = {};
+  for (const t of TABLES) rows[t.name] = (await c.query(selectSql(t))).rows;
+  const db = fromRows(rows);
+  return { db, rev: await getRev(c), snap: snapshot(db) };
 }
 
 /** เขียนเฉพาะแถวที่เปลี่ยนจากครั้งก่อน คืนค่าว่ามีการเปลี่ยนหรือไม่ */
 async function persist(c: PoolClient, cache: Cache): Promise<boolean> {
-  const db = cache.db as unknown as Record<string, unknown>;
-  const next = new Map<string, Row>();
-  let changed = false;
+  const next = snapshot(cache.db, true);
+  let any = false;
 
-  const keys: string[] = [];
-  const values: string[] = [];
-  for (const k of SINGLES) {
-    const json = JSON.stringify(db[k] ?? null);
-    next.set(`meta:${k}`, { pos: 0, json });
-    if (cache.snap.get(`meta:${k}`)?.json !== json) {
-      keys.push(k);
-      values.push(json);
-    }
-  }
-  if (keys.length) {
-    changed = true;
-    await c.query("insert into meta (key, value) select * from unnest($1::text[], $2::jsonb[]) on conflict (key) do update set value = excluded.value", [keys, values]);
-  }
-
-  for (const t of LIST_TABLES) {
-    const up = { id: [] as string[], pos: [] as number[], data: [] as string[] };
-    const moved = { id: [] as string[], pos: [] as number[] };
-    (db[t] as never[]).forEach((item, pos) => {
-      const id = KEY[t](item);
-      const key = `${t}:${id}`;
-      if (next.has(key)) throw new Error(`Duplicate id ${id} in ${t}`);
-      const json = JSON.stringify(item);
-      next.set(key, { pos, json });
-      const old = cache.snap.get(key);
-      if (old?.json !== json) {
-        up.id.push(id);
-        up.pos.push(pos);
-        up.data.push(json);
-      } else if (old.pos !== pos) {
-        moved.id.push(id);
-        moved.pos.push(pos);
-      }
-    });
-    const gone = [...cache.snap.keys()].filter((k) => k.startsWith(`${t}:`) && !next.has(k)).map((k) => k.slice(t.length + 1));
-    if (gone.length) await c.query(`delete from ${t} where id = any($1::text[])`, [gone]);
-    if (up.id.length) {
+  for (const t of TABLES) {
+    const before = cache.snap.get(t.name) ?? new Map();
+    const after = next.get(t.name)!;
+    const del = [...before].filter(([id]) => !after.has(id)).map(([, v]) => v.key);
+    const up = [...after].filter(([id, v]) => before.get(id)?.json !== v.json).map(([, v]) => v);
+    if (del.length) {
+      const types = t.key.map((k) => t.cols.find(([c]) => c === k)![1]);
       await c.query(
-        `insert into ${t} (id, pos, data) select * from unnest($1::text[], $2::int[], $3::jsonb[]) on conflict (id) do update set pos = excluded.pos, data = excluded.data`,
-        [up.id, up.pos, up.data],
+        `delete from ${t.name} using unnest(${types.map((type, i) => `$${i + 1}::${type}[]`).join(", ")}) as d(${t.key.join(", ")}) where ${t.key.map((k) => `${t.name}.${k} = d.${k}`).join(" and ")}`,
+        t.key.map((_, i) => del.map((key) => key[i])),
       );
     }
-    if (moved.id.length) await c.query(`update ${t} set pos = u.pos from unnest($1::text[], $2::int[]) as u(id, pos) where ${t}.id = u.id`, [moved.id, moved.pos]);
-    if (gone.length || up.id.length || moved.id.length) changed = true;
+    if (up.length) {
+      const values = up.map((v) => v.values!);
+      const rest = t.cols.filter(([c]) => !t.key.includes(c));
+      await c.query(
+        `insert into ${t.name} (${t.cols.map(([c]) => c).join(", ")}) select * from unnest(${t.cols.map(([, type], i) => `$${i + 1}::${type}[]`).join(", ")})
+         on conflict (${t.key.join(", ")}) do update set ${rest.map(([c]) => `${c} = excluded.${c}`).join(", ")}`,
+        t.cols.map(([, type], i) => values.map((v) => (type === "jsonb" && v[i] !== null ? JSON.stringify(v[i]) : v[i]))),
+      );
+    }
+    if (del.length || up.length) any = true;
   }
 
+  // ค่าของแถวใช้แค่ตอนบันทึก จึงทิ้งไป ไม่เก็บไว้ในหน่วยความจำ
+  for (const rows of next.values()) for (const r of rows.values()) delete r.values;
   cache.snap = next;
-  return changed;
+  return any;
 }
 
-const setMeta = (c: PoolClient, key: string, value: unknown) =>
-  c.query("insert into meta (key, value) values ($1, $2::jsonb) on conflict (key) do update set value = excluded.value", [key, JSON.stringify(value)]);
+/** เลขรุ่นของข้อมูล เพิ่มทุกครั้งที่บันทึก เครื่องอื่นจะได้รู้ว่าต้องโหลดใหม่ */
+const getRev = async (c: Pick<PoolClient, "query">) => Number((await c.query<{ rev: number }>("select rev from site where id = 1")).rows[0]?.rev ?? 0);
+const setRev = (c: PoolClient, rev: number) => c.query("update site set rev = $1 where id = 1", [rev]);
 
-/** เติมข้อมูลที่เพิ่มมาทีหลังให้ข้อมูลเก่ายังใช้งานได้ */
-function migrate(db: DB): DB {
-  const seed = createSeed();
-  const st = db.settings as Partial<DB["settings"]> & { name?: string };
-  db.settings = { ...seed.settings, ...st, siteName: st.siteName ?? { th: st.name ?? "GD4 Medical", en: st.name ?? "GD4 Medical" } } as DB["settings"];
-  delete (db.settings as { name?: string }).name;
-  // เลิกใช้ระบบสำรองข้อมูลแล้ว จึงตัดข้อมูลที่เหลือของระบบนั้นออก
-  delete (db as { backups?: unknown }).backups;
-  delete (db.settings as { autoBackup?: boolean }).autoBackup;
-  // เลิกใช้แท็บตั้งค่าภาษาแล้ว หน้าเว็บกำหนดภาษาไว้ในโค้ด
-  delete (db.settings as { languages?: unknown }).languages;
-  db.media ??= [];
-  // เลิกใช้ฟอร์มติดต่อและระบบข้อความจากลูกค้าแล้ว
-  delete (db as { messages?: unknown }).messages;
-  for (const r of Object.values(db.perms) as Record<string, unknown>[]) delete r.inbox;
-  // เลิกใช้ตารางสเปกและแคตตาล็อก PDF ของสินค้าแล้ว
-  for (const p of db.products as { specs?: unknown; pdf?: unknown }[]) {
-    delete p.specs;
-    delete p.pdf;
-  }
-  // เพิ่มสิทธิ์ของประวัติการแก้ไข
-  for (const r of Object.keys(DEFAULT_PERMS) as (keyof typeof DEFAULT_PERMS)[]) {
-    if (db.perms[r]) db.perms[r].activity ??= structuredClone(DEFAULT_PERMS[r].activity);
-    // ลบประวัติได้เฉพาะผู้ดูแลสูงสุด
-    if (r !== "super" && db.perms[r]) db.perms[r].activity.del = false;
-  }
-  db.design ??= seed.design;
-  // เพิ่มมุมโค้งของปุ่ม รูปภาพ และช่องกรอก ค่าเริ่มต้นเท่ากับหน้าตาเดิม
-  for (const d of [db.design, db.draft?.design]) {
-    if (!d) continue;
-    d.btnRadius ??= seed.design.btnRadius;
-    d.imgRadius ??= seed.design.imgRadius;
-    d.inputRadius ??= seed.design.inputRadius;
-  }
-  // เลิกใช้การย้อนกลับเวอร์ชันแล้ว
-  delete (db as { versions?: unknown }).versions;
-  // ไฟล์ข้อมูลตัวอย่างเก็บรหัสผ่านแบบอ่านได้ ต้องเข้ารหัสก่อนเก็บลงฐานข้อมูลเสมอ
-  for (const u of db.users as (DB["users"][number] & { password?: string })[]) {
-    if (typeof u.password === "string") u.passwordHash = u.password ? hashPassword(u.password) : null;
-    delete u.password;
-  }
-  // เลิกใช้ช่องคำอธิบายรูปแล้ว รูปใช้หัวข้อของส่วนนั้นแทน
-  for (const p of [...db.pages, ...(db.draft?.pages ?? [])]) {
-    for (const s of p.sections as { imgAlt?: unknown; items?: { imgAlt?: unknown }[] }[]) {
-      delete s.imgAlt;
-      if (Array.isArray(s.items)) for (const it of s.items) delete it.imgAlt;
-    }
-  }
-  // ส่วนที่ไม่มีตัวเลือกพื้นหลัง ใช้สีตั้งต้นของประเภทนั้นเสมอ เช่นฮีโร่และส่วนหัวของหน้าเปลี่ยนจากกรมท่าเป็นเทา
-  for (const p of [...db.pages, ...(db.draft?.pages ?? [])]) {
-    for (const s of p.sections) {
-      const def = TYPES[s.type];
-      if (def?.noBg && def.defaultBg) s.bg = def.defaultBg;
-    }
-  }
-  db.draft ??= null;
-  db.draftRev ??= 0;
-  if (db.draft && !db.draft.global) db.draft = null;
-  // ข้อความกล่องปรึกษา คำถามที่พบบ่อย และการ์ดเลือกเรื่อง ย้ายจากข้อความส่วนกลางไปอยู่ในส่วนของหน้านั้น ค่าที่เคยแก้ไว้ย้ายตามไปด้วย
-  type Old = { texts?: Record<string, LText | undefined> };
-  const oldSet = db.settings as unknown as Old;
-  const oldDraft = db.draft?.global as unknown as Old | undefined;
-  for (const [pages, texts] of [[db.pages, oldSet.texts], [db.draft?.pages ?? [], oldDraft?.texts ?? oldSet.texts]] as const) {
-    const old = texts ?? {};
-    const pick = (k: string, fb: LText): LText => ({ th: old[k]?.th?.trim() || fb.th, en: old[k]?.en?.trim() || fb.en });
-    const empty = (v?: LText) => !v?.th?.trim() && !v?.en?.trim();
-    for (const p of pages) {
-      for (const s of p.sections) {
-        if (s.type === "faq" && empty(s.help)) s.help = pick("faqHelp", FAQ_HELP);
-        // ปุ่มของคำถามที่พบบ่อยแก้ได้แล้ว ส่วนเดิมใช้ปุ่มติดต่อฝ่ายขายแบบเดิม
-        if (s.type === "faq" && empty(s.btnLabel) && !s.btnUrl) Object.assign(s, structuredClone(FAQ_BTN));
-        if (s.type === "products" && s.catalog && empty(s.helpTitle)) Object.assign(s, Object.fromEntries(Object.entries(CATALOG_HELP).map(([k, v]) => [k, pick(k, v)])));
-        if (s.type === "contact" && !s.items?.length) {
-          const keys = [["pathSalesT", "pathSalesD", "pathSalesGo"], ["pathServiceT", "pathServiceD", "pathServiceGo"], ["pathAllT", "pathAllD", "pathAllGo"]];
-          s.items = CONTACT_PATHS().map((it, i) => ({ ...it, title: pick(keys[i][0], it.title), desc: pick(keys[i][1], it.desc), btnLabel: pick(keys[i][2], it.btnLabel) }));
-        }
-      }
-    }
-  }
-  // ข้อความในหน้ารายละเอียดสินค้าเปลี่ยนเป็นรายการกล่องที่เพิ่มลบได้ หัวข้อของส่วนด้านล่างใช้ข้อความคงที่
-  for (const [g, o] of [[db.settings, oldSet], [db.draft?.global, oldDraft]] as const) {
-    if (!g || !o) continue;
-    if (!Array.isArray(g.productTiles)) {
-      const keys = ["trustInstall", "trustTrain", "trustAfter"];
-      g.productTiles = seed.settings.productTiles.map((x, i) => ({ ...x, label: { th: o.texts?.[keys[i]]?.th?.trim() || x.label.th, en: o.texts?.[keys[i]]?.en?.trim() || x.label.en } }));
-    }
-    delete o.texts;
-  }
-  // เลิกใช้พิกัดแล้ว แผนที่ใช้โค้ดฝังแผนที่ของ Google Maps แทน
-  for (const c of [db.settings.contact, db.draft?.global.contact] as (Record<string, unknown> | undefined)[]) {
-    if (!c) continue;
-    delete c.lat;
-    delete c.lng;
-    c.mapEmbed ??= "";
-  }
-  for (const p of db.pages) {
-    const sp = seed.pages.find((x) => x.id === p.id);
-    p.inMenu ??= sp?.inMenu ?? false;
-    p.system ??= sp?.system ?? false;
-  }
-  return db;
-}
-
-/** เตรียมฐานข้อมูลครั้งแรก ถ้ายังว่างจะนำข้อมูลจากโฟลเดอร์ .data หรือข้อมูลตั้งต้นมาใส่ */
+/** ฐานข้อมูลที่ยังว่างจะใส่ข้อมูลตั้งต้นให้ครั้งแรก */
 async function init() {
   await tx(async (c) => {
     await c.query("select pg_advisory_xact_lock($1)", [LOCK]);
-    const { rows } = await c.query<{ value: number }>("select value from meta where key = '_migrate'");
-    if (rows.length && Number(rows[0].value) >= MIGRATE_REV) return;
-    let cache: Cache;
-    if (rows.length) {
-      // ตารางของระบบสำรองข้อมูลที่เลิกใช้แล้ว
-      await c.query("drop table if exists backups, backup_files, versions");
-      cache = await load(c);
-    } else {
-      const legacy = await importLegacy(c);
-      cache = { db: legacy ?? createSeed(), rev: 0, snap: new Map() };
-    }
-    migrate(cache.db);
-    await persist(c, cache);
-    await setMeta(c, "_rev", cache.rev + 1);
-    await setMeta(c, "_migrate", MIGRATE_REV);
+    const { rows } = await c.query("select 1 from site");
+    if (rows.length) return;
+    await persist(c, { db: createSeed(), rev: 0, snap: new Map() });
+    await setRev(c, 1);
   });
 }
 
@@ -246,13 +105,24 @@ function ready(): Promise<void> {
 
 export async function readDb(): Promise<DB> {
   await ready();
-  const { rows } = await pool().query<{ value: number }>("select value from meta where key = '_rev'");
-  const rev = Number(rows[0]?.value ?? 0);
+  const rev = await getRev(pool());
   if (g.__gd4cache?.rev !== rev) {
     g.__gd4loading ??= tx(load, "isolation level repeatable read read only").finally(() => (g.__gd4loading = undefined));
     g.__gd4cache = await g.__gd4loading;
   }
   return g.__gd4cache.db;
+}
+
+/** อ่านข้อมูลล่าสุดและทำงานกับฐานข้อมูลในล็อกเดียวกับการบันทึก ห้ามแก้ข้อมูลที่ได้มา
+ * ใช้กับงานที่ต้องตรวจข้อมูลก่อนทำ เช่นลบไฟล์เฉพาะเมื่อไม่มีที่ไหนใช้แล้ว */
+export async function withLock<T>(fn: (db: DB, c: PoolClient) => Promise<T>): Promise<T> {
+  await ready();
+  return tx(async (c) => {
+    await c.query("select pg_advisory_xact_lock($1)", [LOCK]);
+    const rev = await getRev(c);
+    if (g.__gd4cache?.rev !== rev) g.__gd4cache = await load(c);
+    return fn(g.__gd4cache.db, c);
+  });
 }
 
 /** แก้ข้อมูลแล้วบันทึกลงฐานข้อมูลทันที ทำทีละครั้งจึงไม่ทับกัน ถ้าบันทึกไม่สำเร็จจะไม่มีอะไรเปลี่ยน */
@@ -261,14 +131,13 @@ export async function mutate<T>(fn: (db: DB) => T): Promise<T> {
   try {
     return await tx(async (c) => {
       await c.query("select pg_advisory_xact_lock($1)", [LOCK]);
-      const { rows } = await c.query<{ value: number }>("select value from meta where key = '_rev'");
-      const rev = Number(rows[0]?.value ?? 0);
+      const rev = await getRev(c);
       let cache = g.__gd4cache;
       if (cache?.rev !== rev) cache = g.__gd4cache = await load(c);
       const result = fn(cache.db);
       if (await persist(c, cache)) {
         cache.rev = rev + 1;
-        await setMeta(c, "_rev", cache.rev);
+        await setRev(c, cache.rev);
       }
       return result;
     });
@@ -285,4 +154,12 @@ export function nowStr(): string {
   return d.toISOString().slice(0, 16).replace("T", " ");
 }
 
-export const nextId = (list: { id: number }[]) => list.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+const maxId = (list: { id: number }[]) => list.reduce((m, x) => Math.max(m, x.id), 0);
+
+/** รหัสใหม่ที่ไม่ซ้ำกับรหัสที่เคยใช้มาก่อน แม้รายการนั้นถูกลบไปแล้ว
+ * รหัสผู้ใช้ที่ซ้ำจะทำให้คุกกี้ของคนที่ถูกลบเข้าระบบเป็นคนใหม่ได้ */
+export function newId(db: DB, kind: keyof DB["nextIds"]): number {
+  const id = Math.max(db.nextIds[kind], maxId(kind === "user" ? db.users : db.activity) + 1);
+  db.nextIds[kind] = id + 1;
+  return id;
+}

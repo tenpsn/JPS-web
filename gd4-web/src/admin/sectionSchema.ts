@@ -72,7 +72,8 @@ export const TYPES: Record<SectionType, TypeDef> = {
     item: { name: L("การ์ด", "Card"), summary: "title", fields: [{ key: "icon", kind: "chips", label: L("ไอคอน", "Icon"), opts: "icons", wide: true }, F.title, F.desc] },
   },
   stats: {
-    group: "basic", icon: "chart", name: L("ตัวเลข", "Figures"), desc: L("ตัวเลขความสำเร็จ", "Key figures"), defaultBg: "navy", fields: [F.heading],
+    group: "basic", icon: "chart", name: L("ตัวเลข", "Figures"), desc: L("ตัวเลขความสำเร็จ", "Key figures"), defaultBg: "navy",
+    fields: [F.heading, { key: "style", kind: "chips", label: L("รูปแบบ", "Style"), opts: [{ v: "band", label: L("แถบเส้นแดง", "Red-line band") }, { v: "card", label: L("การ์ด", "Card") }] }],
     item: { name: L("ตัวเลข", "Figure"), summary: "value", fields: [{ key: "value", kind: "text", label: L("ตัวเลข", "Figure"), i18n: true, req: true }, { key: "label", kind: "text", label: L("คำอธิบายตัวเลข", "Label"), i18n: true }] },
   },
   gallery: {

@@ -10,6 +10,7 @@ import { ArrowNudge, chipCls, H2, PageIntro } from "@/components/sections/shared
 import { tx } from "@/i18n/config";
 import { getDict } from "@/i18n/dictionary";
 import { getCategories, getProducts } from "@/lib/content";
+import { sanitizeHtml, STORED_MAX } from "@/server/sanitize";
 import type { Img, Locale, Product, SiteSettings } from "@/types/site";
 
 export async function ProductDetail({ p, lang, settings }: { p: Product; lang: Locale; settings: SiteSettings }) {
@@ -23,10 +24,11 @@ export async function ProductDetail({ p, lang, settings }: { p: Product; lang: L
   const name = tx(p.name, lang);
   // รูปทั้งหมดของสินค้าที่มีไฟล์แล้ว ถ้าข้อมูลเก่ายังไม่มีรายการรูป ใช้รูปหลักรูปเดียว
   const alt = (src: Img, label?: string) => (src === "placeholder" ? `${t.p.img} · ${p.sku}` : label || name);
-  const gallery: GalleryImage[] = (p.images ?? []).filter((im) => im.src).map((im) => ({ id: im.id, src: im.src, alt: alt(im.src, tx(im.label, lang)) }));
+  const gallery: GalleryImage[] = (p.images ?? []).filter((im) => im.src).map((im) => ({ id: im.id, src: im.src, alt: alt(im.src, im.label) }));
   if (!gallery.length && p.img) gallery.push({ id: "main", src: p.img, alt: alt(p.img) });
   const short = tx(p.short, lang);
-  const detail = tx(p.detail, lang);
+  // กรองซ้ำตอนแสดง รายละเอียดที่บันทึกไว้ก่อนเปลี่ยนตัวกรองจะได้ปลอดภัยด้วย
+  const detail = sanitizeHtml(tx(p.detail, lang), STORED_MAX);
 
   return (
     <>

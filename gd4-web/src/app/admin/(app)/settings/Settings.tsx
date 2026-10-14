@@ -371,7 +371,10 @@ function Seo({ settings, pages }: { settings: SiteSettings; pages: PageLite[] })
 
   const page = pages.find((p) => p.id === target);
   const siteTitle = settings.seo.title[nl];
-  const gTitle = v.title[nl] || (page ? `${page.title[nl]} · ${settings.siteName[nl]}` : siteTitle);
+  // ชื่อที่ขึ้นจริงบน Google หน้าแรกใช้ตามที่กรอกเป๊ะ หน้าอื่นเติมชื่อเว็บต่อท้ายให้เอง
+  const plain = !page || page.slug === "/";
+  const titleHint = plain ? siteTitle : `${page.title[nl]} · ${settings.siteName[nl]}`;
+  const gTitle = v.title[nl] ? (plain ? v.title[nl] : `${v.title[nl]} · ${settings.siteName[nl]}`) : titleHint;
   const gDesc = v.description[nl] || settings.seo.description[nl];
   const url = `${SITE_HOST}${nl === "en" ? "/en" : ""}${page && page.slug !== "/" ? page.slug : ""}`;
   const imgBg = v.image ? `center/cover no-repeat url(${v.image})` : "repeating-linear-gradient(135deg,var(--ph1) 0 8px,var(--ph2) 8px 16px)";
@@ -407,7 +410,7 @@ function Seo({ settings, pages }: { settings: SiteSettings; pages: PageLite[] })
               <span className={label}>{t.set.seoTitle}</span>
               {count(v.title[nl], 60)}
             </span>
-            <input value={v.title[nl]} onChange={(e) => set({ title: { ...v.title, [nl]: e.target.value } })} placeholder={page ? `${page.title[nl]} · ${settings.siteName[nl]}` : ""} className="field min-h-11" />
+            <input value={v.title[nl]} onChange={(e) => set({ title: { ...v.title, [nl]: e.target.value } })} placeholder={page ? (plain ? siteTitle : page.title[nl]) : ""} className="field min-h-11" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="flex justify-between gap-2.5">

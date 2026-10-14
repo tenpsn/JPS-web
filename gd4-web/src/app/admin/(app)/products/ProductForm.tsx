@@ -9,7 +9,7 @@ import { useAdmin } from "@/admin/context";
 import { fmtDate } from "@/admin/i18n";
 import { IMG_MAX, SHORT_MAX, validateProduct, type ProductErrors, type ProductInput } from "@/admin/productRules";
 import { btn, Confirm, FieldError, label, mediaSrcs, Modal, PageHead, Pill, PubBar, RadioCard, Req, uploadFile, useToast, useUnsavedGuard } from "@/admin/ui";
-import type { Category, LText, Locale, ProductImage } from "@/types/site";
+import type { Category, Locale, ProductImage } from "@/types/site";
 import { deleteProducts, saveProduct } from "../../actions/products";
 import { CategoriesModal } from "./CategoriesModal";
 
@@ -21,7 +21,7 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
   categories: Category[];
   /** รหัสสินค้าของสินค้าอื่น ใช้ตรวจว่ารหัสซ้ำหรือไม่ */
   others: { id: string; sku: string }[];
-  meta: { updatedAt?: string; byName?: LText } | null;
+  meta: { updatedAt?: string; byName?: string } | null;
   canEdit: boolean;
   canPublish: boolean;
   canDel: boolean;
@@ -117,13 +117,13 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
     const done: ProductImage[] = [];
     for (const file of list.slice(0, room)) {
       const r = await uploadFile(file, "image");
-      if ("src" in r) done.push({ id: uid("im"), src: r.src, label: { th: r.name, en: r.name } });
+      if ("src" in r) done.push({ id: uid("im"), src: r.src, label: r.name });
       else toast("err", t.toast.imgOnly);
     }
     if (done.length) appendImages(done);
   };
   /** เพิ่มรูปที่เลือกจากคลังสื่อ */
-  const pickImage = (src: string, name: string) => appendImages([{ id: uid("im"), src, label: { th: name, en: name } }]);
+  const pickImage = (src: string, name: string) => appendImages([{ id: uid("im"), src, label: name }]);
   const moveImg = (from: number, to: number) =>
     set((x) => {
       if (to < 0 || to >= x.images.length) return x;
@@ -372,7 +372,7 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
                         } ${dragging === im.id ? "opacity-40" : ""}`}
                         style={{ backgroundImage: real ? `url(${im.src})` : "repeating-linear-gradient(135deg,var(--ph1) 0 6px,var(--ph2) 6px 12px)" }}
                       >
-                        {!real && <span className="absolute inset-0 grid place-items-center px-2.5 py-7 text-center font-mono text-[11.5px] font-medium text-ph-ink">{im.label[lang]}</span>}
+                        {!real && <span className="absolute inset-0 grid place-items-center px-2.5 py-7 text-center font-mono text-[11.5px] font-medium text-ph-ink">{im.label}</span>}
                         {isMain && (
                           <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full bg-[#c8312a] px-2 py-[3px] text-[11.5px] font-semibold text-white">
                             <AIcon name="star" size={12} />
@@ -419,7 +419,7 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
             <RadioCard on={f.status === "draft"} onPick={() => set((x) => ({ ...x, status: "draft" }))} title={t.prod.draft} desc={t.form.draftDesc} />
             {meta?.updatedAt && (
               <span className="text-[13px] leading-normal text-ink3">
-                {t.form.lastSaved} {fmtDate(meta.updatedAt, lang)} · {meta.byName?.[lang] ?? "—"}
+                {t.form.lastSaved} {fmtDate(meta.updatedAt, lang)} · {meta.byName ?? "—"}
               </span>
             )}
             {!isNew && canDel && (
@@ -475,7 +475,7 @@ export function ProductForm({ initial, categories, others, meta, canEdit, canPub
               className="grid aspect-square place-items-center rounded-xl bg-cover bg-center font-mono text-[13px] font-medium text-ph-ink"
               style={{ backgroundImage: main?.src && main.src !== "placeholder" ? `url(${main.src})` : "repeating-linear-gradient(135deg,var(--ph1) 0 8px,var(--ph2) 8px 16px)" }}
             >
-              {!(main?.src && main.src !== "placeholder") && (main?.label[lang] ?? f.sku)}
+              {!(main?.src && main.src !== "placeholder") && (main?.label ?? f.sku)}
             </div>
             <div className="grid grid-cols-4 gap-2">
               {f.images.slice(0, 4).map((im) => (

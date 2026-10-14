@@ -129,7 +129,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
   /* บันทึกฉบับร่างอัตโนมัติเมื่อหยุดพิมพ์ แล้วรีเฟรชหน้าตัวอย่าง */
   // เลขรุ่นของฉบับร่างที่หน้านี้ใช้อยู่ ถ้ามีฉบับใหม่กว่า เซิร์ฟเวอร์จะไม่ยอมให้บันทึกทับ
   const rev = useRef(initialRev);
-  const [conflict, setConflict] = useState<{ who: LText; when: string } | null>(null);
+  const [conflict, setConflict] = useState<{ who: string; when: string } | null>(null);
   const flush = useCallback(
     async (next: Working): Promise<boolean> => {
       try {
@@ -394,8 +394,8 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
           <AIcon name="alert" size={20} />
           <span className="min-w-[220px] flex-1 text-[14.5px] font-medium leading-normal">
             {ui === "th"
-              ? `ฉบับร่างถูกแก้ไขจากหน้าต่างอื่น (${conflict.who.th}${conflict.when ? ` · ${relDate(conflict.when, "th")}` : ""}) จึงหยุดบันทึกอัตโนมัติเพื่อไม่ให้เขียนทับกัน โหลดฉบับล่าสุดก่อนแก้ต่อ`
-              : `The draft was changed in another window (${conflict.who.en}${conflict.when ? ` · ${relDate(conflict.when, "en")}` : ""}). Autosave is paused so nothing is overwritten. Load the latest version to continue.`}
+              ? `ฉบับร่างถูกแก้ไขจากหน้าต่างอื่น (${conflict.who}${conflict.when ? ` · ${relDate(conflict.when, "th")}` : ""}) จึงหยุดบันทึกอัตโนมัติเพื่อไม่ให้เขียนทับกัน โหลดฉบับล่าสุดก่อนแก้ต่อ`
+              : `The draft was changed in another window (${conflict.who}${conflict.when ? ` · ${relDate(conflict.when, "en")}` : ""}). Autosave is paused so nothing is overwritten. Load the latest version to continue.`}
           </span>
           <button type="button" onClick={() => window.location.reload()} className={`${btn.primary} min-h-10 text-sm`}>
             <AIcon name="undo" />
@@ -467,8 +467,6 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
                   onClick={() => (setPageId(p.id), setOpenSec(null))}
                   className={`inline-flex min-h-10 flex-none cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border-0 px-3.5 text-[14.5px] font-semibold transition-colors ${pageId === p.id ? "bg-blue-solid text-white" : "bg-transparent text-ink2"}`}
                 >
-                  {p.id === GLOBAL && <AIcon name="globe" size={16} />}
-                  {p.id === PRODUCT && <AIcon name="box" size={16} />}
                   {p.label}
                 </button>
               ))}

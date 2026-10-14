@@ -19,7 +19,8 @@ export const globalOf = (s: SiteSettings): GlobalContent => ({ menu: s.menu, soc
 
 /* ทำความสะอาดข้อมูล ทุกอย่างที่ส่งมาจากเบราว์เซอร์ต้องผ่านตรงนี้ */
 
-const str = (v: unknown, max = 2000) => String(v ?? "").slice(0, max);
+/** แปลงเป็นข้อความและตัดความยาว ตัดอักขระว่างรหัสศูนย์ออก เพราะฐานข้อมูลไม่รับอักขระนี้ */
+export const str = (v: unknown, max = 2000) => String(v ?? "").replaceAll("\u0000", "").slice(0, max);
 const lt = (v: unknown, max = 2000): LText => {
   const o = (v && typeof v === "object" ? v : {}) as Partial<LText>;
   return { th: str(o.th, max), en: str(o.en, max) };
@@ -90,6 +91,8 @@ export function cleanSection(raw: unknown): Section | null {
     if (!out.catalog) for (const k of ["helpTitle", "helpDesc", "helpBtn"]) delete out[k];
   }
   if (type === "textImage" && out.imgSide !== "left") out.imgSide = "right";
+  // ส่วนตัวเลขที่ยังไม่ได้เลือกรูปแบบ ใช้รูปแบบตามสีพื้นหลังแบบเดิม
+  if (type === "stats" && out.style !== "band" && out.style !== "card") out.style = out.bg === "navy" ? "band" : "card";
   if (type === "pageHeader" && !["image", "contact"].includes(String(out.side))) out.side = "none";
   return out as Section;
 }
@@ -180,9 +183,10 @@ export function cleanDesign(raw: unknown): Design {
     lh: { heading: num(d.lh?.heading, 1, 2.2, D.lh.heading), body: num(d.lh?.body, 1, 2.2, D.lh.body) },
     ls: { heading: num(d.ls?.heading, -1, 4, D.ls.heading), body: num(d.ls?.body, -1, 4, D.ls.body) },
     colors: { light: colors("light"), dark: colors("dark") },
-    radius: num(d.radius, 0, 28, D.radius),
+    // คอลัมน์มุมโค้งเก็บเป็นจำนวนเต็ม จึงปัดเศษก่อน ไม่อย่างนั้นจะบันทึกร่างได้แต่เผยแพร่ไม่ได้
+    radius: Math.round(num(d.radius, 0, 28, D.radius)),
     btnRadius: [0, 4, 8, 12, 999].includes(Number(d.btnRadius)) ? Number(d.btnRadius) : D.btnRadius,
-    imgRadius: num(d.imgRadius, 0, 28, D.imgRadius),
+    imgRadius: Math.round(num(d.imgRadius, 0, 28, D.imgRadius)),
     inputRadius: [0, 4, 8, 12, 999].includes(Number(d.inputRadius)) ? Number(d.inputRadius) : D.inputRadius,
     spacing: [0.75, 1, 1.3].includes(Number(d.spacing)) ? Number(d.spacing) : 1,
   };

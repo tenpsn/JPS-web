@@ -1,6 +1,6 @@
 import "server-only";
-import { deleteUpload } from "./files";
-import { mutate } from "./store";
+import { UPLOAD_NAME } from "./files";
+import { mutate, withLock } from "./store";
 import type { DB } from "./types";
 
 /** ข้อมูลทุกส่วนที่อาจอ้างถึงไฟล์อัปโหลด รวมถึงฉบับร่างที่ยังไม่เผยแพร่ */
@@ -23,6 +23,18 @@ export async function mutateAndPrune<T>(fn: (db: DB) => T): Promise<T> {
     unused = [...before].filter((s) => !after.includes(s) && !library.has(s));
     return out;
   });
-  for (const src of unused) await deleteUpload(src);
+  await deleteUnused(unused);
   return result;
+}
+
+/** ลบไฟล์ที่ไม่มีที่ไหนใช้และไม่อยู่ในคลังรูป ตรวจซ้ำในล็อก
+ * ถ้าระหว่างนั้นมีคนอัปโหลดไฟล์เดียวกันแล้วนำไปใช้ ไฟล์นั้นจะไม่ถูกลบ */
+export async function deleteUnused(srcs: string[]): Promise<void> {
+  if (!srcs.length) return;
+  await withLock(async (db, c) => {
+    const used = usedText(db);
+    const library = new Set(db.media.map((m) => m.src));
+    const names = srcs.filter((s) => !used.includes(s) && !library.has(s)).map((s) => s.replace(/^\/media\//, "")).filter((n) => UPLOAD_NAME.test(n));
+    if (names.length) await c.query("delete from uploads where name = any($1::text[])", [names]);
+  });
 }

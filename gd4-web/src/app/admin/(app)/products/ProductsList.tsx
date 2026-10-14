@@ -7,7 +7,7 @@ import { AIcon } from "@/admin/AIcon";
 import { useAdmin } from "@/admin/context";
 import { fmtDate, relDate } from "@/admin/i18n";
 import { btn, Confirm, PAGE_SIZE, PageHead, Pager, Pill, useToast } from "@/admin/ui";
-import type { Category, LText, Product } from "@/types/site";
+import type { Category, Product } from "@/types/site";
 import { deleteProducts, moveProducts, setProductsStatus } from "../../actions/products";
 import { CategoriesModal } from "./CategoriesModal";
 
@@ -46,7 +46,7 @@ export function Thumb({ img, sku, className, text = "text-[10px]" }: { img: Prod
 export function ProductsList({ products, categories, users, initialQ, initialStatus = "all", canEdit, canPub, canDel }: {
   products: Row[];
   categories: Category[];
-  users: Record<number, LText>;
+  users: Record<number, string>;
   initialQ: string;
   initialStatus?: string;
   canEdit: boolean;
@@ -135,7 +135,7 @@ export function ProductsList({ products, categories, users, initialQ, initialSta
     });
 
   const st = (s: Row["status"]) => (s === "pub" ? <Pill tone="green">{t.prod.pub}</Pill> : <Pill tone="amber">{t.prod.draft}</Pill>);
-  const by = (id?: number) => (id ? users[id]?.[lang] ?? "—" : "—");
+  const by = (id?: number) => (id ? users[id] ?? "—" : "—");
   const editHref = (p: Row) => `/admin/products/${p.id}`;
   const check = (p: Row, size = "size-[18px]") =>
     canSel && (

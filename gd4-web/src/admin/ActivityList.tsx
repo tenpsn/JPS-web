@@ -100,14 +100,14 @@ export function ActivityList({ activity, users, empty, fullDate = false, rowClas
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(a.id)}
-                  aria-label={`${u?.name[lang] ?? "—"} ${a.action[lang]} ${a.target[lang]}`}
+                  aria-label={`${u?.name ?? "—"} ${a.action[lang]} ${a.target[lang]}`}
                   className="mt-2.5 size-[18px] flex-none cursor-pointer accent-[var(--blue-solid)]"
                 />
               )}
-              <Avatar u={u} lang={lang} />
+              <Avatar u={u} />
               <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
                 <span className="text-[15px] leading-[1.55]">
-                  <strong className="font-semibold">{u?.name[lang] ?? "—"}</strong> {a.action[lang]} <span className="font-medium text-blue">{a.target[lang]}</span>
+                  <strong className="font-semibold">{u?.name ?? "—"}</strong> {a.action[lang]} <span className="font-medium text-blue">{a.target[lang]}</span>
                 </span>
                 <time className="text-[13px] text-ink3">{fullDate ? `${fmtDate(a.when, lang)} · ${relDate(a.when, lang)}` : relDate(a.when, lang)}</time>
               </span>

@@ -6,7 +6,9 @@ import { logActivity } from "@/server/activity";
 import { getCurrentUser, renewSession } from "@/server/auth";
 import { mutateAndPrune } from "@/server/cleanup";
 import { hashPassword, verifyPassword } from "@/server/password";
+import { tryAttempt } from "@/server/limiter";
 import { mutate, readDb } from "@/server/store";
+import { str } from "@/server/content";
 
 /* โปรไฟล์ของตัวเอง ผู้ใช้ทุกคนแก้บัญชีของตัวเองได้โดยไม่ต้องมีสิทธิ์ใด */
 
@@ -15,15 +17,15 @@ const avatarSrc = (s: unknown) => (typeof s === "string" && /^\/media\/[0-9a-f-]
 export async function saveProfile(input: { name: string; avatar: string | null }): Promise<{ ok: true } | { ok: false; error: "errName" }> {
   const me = await getCurrentUser();
   if (!me) throw new Error("Forbidden");
-  const name = String(input.name ?? "").trim().slice(0, 80);
+  const name = str(input.name, 80).trim();
   if (!name) return { ok: false, error: "errName" };
   const avatar = avatarSrc(input.avatar);
   // รูปโปรไฟล์เดิมที่ไม่มีใครใช้แล้วจะถูกลบออกจากระบบ
   await mutateAndPrune((db) => {
     const u = db.users.find((x) => x.id === me.id)!;
-    if (u.name.th === name && (u.avatar ?? null) === avatar) return;
+    if (u.name === name && (u.avatar ?? null) === avatar) return;
     const ini = initials(name);
-    Object.assign(u, { name: { th: name, en: name }, ini: { th: ini, en: ini }, avatar });
+    Object.assign(u, { name, ini, avatar });
     logActivity(db, me.id, { th: "แก้โปรไฟล์", en: "updated profile" }, { th: "บัญชีตัวเอง", en: "own account" });
   });
   revalidatePath("/admin", "layout");
@@ -39,7 +41,12 @@ export async function changePassword(cur: string, nw: string, conf: string): Pro
   const errors: PwErrors = {};
   // ช่องว่างกับรหัสไม่ถูกต้องแจ้งคนละข้อความ ผู้ใช้จะได้รู้ว่าต้องแก้อะไร
   if (!cur) errors.cur = "errCur";
-  else if (!verifyPassword(cur, u.passwordHash)) errors.cur = "errCurWrong";
+  else {
+    // จำกัดจำนวนครั้งที่ใส่รหัสเดิมผิด คนที่ได้คุกกี้ของเราไปจะเดารหัสผ่านเพื่อเปลี่ยนทับไม่ได้
+    const undo = tryAttempt({ [`pw:${me.id}`]: 5 });
+    if (!undo || !verifyPassword(cur, u.passwordHash)) errors.cur = "errCurWrong";
+    else undo();
+  }
   if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(nw)) errors.nw = "errNw";
   if (nw !== conf) errors.conf = "errConf";
   if (Object.keys(errors).length) return { ok: false, errors };

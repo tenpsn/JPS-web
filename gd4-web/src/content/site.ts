@@ -154,6 +154,7 @@ export const PAGES: Page[] = [
         id: id("s"),
         type: "stats",
         bg: "navy",
+        style: "band",
         heading: L("GD4 ในตัวเลข", "GD4 in numbers"),
         items: items([
           { value: L("2009", "2009"), label: L("ปีที่ก่อตั้งบริษัท", "Year founded") },

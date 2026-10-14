@@ -36,5 +36,3 @@ yarn-error.log*
 # ไฟล์ที่ TypeScript สร้างเอง
 *.tsbuildinfo
 next-env.d.ts
-
-# ข้อมูลจำลองในโฟลเดอร์ .data ถูกเอาเข้า git เป็นเวอร์ชันตัวอย่าง

@@ -46,7 +46,8 @@ export function FieldInput({ f, o, lang, onChange, err, categories, onPickMedia,
   // ช่องลิงก์ที่พิมพ์ผิดรูปแบบจะถูกตัดทิ้งตอนบันทึก จึงเตือนไว้ก่อน ปุ่มที่ใช้ลิงก์นี้จะได้ไม่หายไปเงียบ ๆ
   const urlErr = f.url && v.trim() && !safeUrl(v) ? (uiLang === "th" ? "ลิงก์ไม่ถูกต้อง ขึ้นต้นด้วย / สำหรับหน้าในเว็บ เช่น /contact หรือใส่ลิงก์เว็บอื่นเต็ม ๆ เช่น https://example.com" : "Invalid link. Start with / for a page on this site, such as /contact, or enter a full link such as https://example.com") : undefined;
   const mapErr = f.key === "mapEmbed" && v.trim() && !mapEmbedSrc(v) ? (uiLang === "th" ? "ไม่ใช่โค้ดฝังแผนที่ของ Google Maps ระบบจะไม่แสดงแผนที่นี้" : "This is not a Google Maps embed code, so the map will not be shown") : undefined;
-  err = err ?? urlErr ?? mapErr;
+  // ช่องที่ต้องกรอกส่งมาเป็นรหัสข้อความ แปลงเป็นข้อความตามภาษาของหน้าหลังบ้าน
+  err = (err === "errReq" ? t.content.errReq : err) ?? urlErr ?? mapErr;
 
   let input: React.ReactNode;
   if (f.kind === "area") {

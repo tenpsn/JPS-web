@@ -7,7 +7,7 @@ import { AIcon } from "./AIcon";
 import { useAdmin } from "./context";
 import { Confirm, Modal, uploadFile, useToast } from "./ui";
 
-type Item = { src: string; name: string; size: number; when: string; used: boolean };
+type Item = { src: string; name: string; size: number; used: boolean };
 
 /**
  * หน้าต่างคลังรูป รวมไอคอนเว็บด้วย
@@ -55,7 +55,7 @@ export function MediaPicker({ open, current, keep, onPick, onClose, kind = "imag
         setItems((x) => {
           // รูปที่มีอยู่แล้วคงชื่อและสถานะใช้อยู่เดิมไว้ ให้ตรงกับที่เซิร์ฟเวอร์เก็บ
           const old = x?.find((i) => i.src === r.src);
-          return [{ ...r, name: old?.name ?? r.name, when: "", used: !!old?.used }, ...(x ?? []).filter((i) => i.src !== r.src)];
+          return [{ ...r, name: old?.name ?? r.name, used: !!old?.used }, ...(x ?? []).filter((i) => i.src !== r.src)];
         });
         toast("ok", t.toast.imgAdded);
       } else toast("err", t.toast.imgOnly);

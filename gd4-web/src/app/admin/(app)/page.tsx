@@ -37,13 +37,13 @@ export default async function Dashboard({ searchParams }: PageProps<"/admin">) {
 
   const ctaSub = t.dash.ctaD
     .replace("{page}", lastPage.title[lang])
-    .replace("{who}", lastBy?.name[lang] ?? "—")
+    .replace("{who}", lastBy?.name ?? "—")
     .replace("{when}", relDate(db.lastEdit.when, lang));
 
   return (
     <div className="flex flex-col gap-[22px]">
       <PageHead
-        title={`${t.dash.hello}${user.name[lang].split(" ")[0]}`}
+        title={`${t.dash.hello}${user.name.split(" ")[0]}`}
         sub={todayLine(lang)}
         actions={
           <>

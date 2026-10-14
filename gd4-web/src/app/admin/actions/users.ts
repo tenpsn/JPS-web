@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { initials } from "@/lib/initials";
 import { logActivity } from "@/server/activity";
 import { assertCan } from "@/server/auth";
+import { deleteUnused } from "@/server/cleanup";
 import { DEFAULT_PERMS } from "@/server/seed";
-import { mutate, nextId, readDb } from "@/server/store";
+import { mutate, newId, readDb } from "@/server/store";
+import { str } from "@/server/content";
 import { ACTIONS, allowed, AREAS, ROLES, superOnly, type Perms, type Role } from "@/server/types";
 import { baseUrl } from "@/server/url";
 
@@ -15,7 +17,10 @@ const INVITE_DAYS = 7;
 
 export type UserInput = { id: number | null; name: string; email: string; role: Role };
 export type UserErrors = Partial<Record<"name" | "email", "errName" | "errEmail" | "errDup">>;
-export type UserResult = { ok: true; inviteLink?: string } | { ok: false; errors?: UserErrors; error?: "noSelf" | "lastSuper" };
+export type UserResult = { ok: true; inviteLink?: string } | { ok: false; errors?: UserErrors; error?: "noSelf" | "lastSuper" | "superOnly" };
+
+/** บัญชีผู้ดูแลสูงสุดแก้ ระงับ หรือลบได้เฉพาะผู้ดูแลสูงสุด ไม่อย่างนั้นสิทธิ์แก้ผู้ใช้จะยกตัวเองเป็นผู้ดูแลสูงสุดได้ */
+const touchesSuper = (me: { role: Role }, ...roles: (Role | undefined)[]) => me.role !== "super" && roles.includes("super");
 
 const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 
@@ -31,8 +36,8 @@ const activeSupers = async (except?: number) => (await readDb()).users.filter((u
 
 export async function saveUser(input: UserInput): Promise<UserResult> {
   const me = await assertCan("users", "edit");
-  const name = String(input.name ?? "").trim().slice(0, 120);
-  const email = String(input.email ?? "").trim().toLowerCase().slice(0, 160);
+  const name = str(input.name, 120).trim();
+  const email = str(input.email, 160).trim().toLowerCase();
   const role = ROLES.includes(input.role) ? input.role : "viewer";
   const id = input.id ? Number(input.id) : null;
 
@@ -42,18 +47,29 @@ export async function saveUser(input: UserInput): Promise<UserResult> {
   else if ((await readDb()).users.some((u) => u.email.toLowerCase() === email && u.id !== id)) errors.email = "errDup";
   if (Object.keys(errors).length) return { ok: false, errors };
 
+  if (touchesSuper(me, role)) return { ok: false, error: "superOnly" };
   if (id) {
     const cur = (await readDb()).users.find((u) => u.id === id);
     if (!cur) return { ok: false };
+    if (touchesSuper(me, cur.role)) return { ok: false, error: "superOnly" };
+    // เปลี่ยนบทบาทของตัวเองไม่ได้ ต้องให้ผู้ดูแลคนอื่นเปลี่ยนให้
+    if (id === me.id && role !== cur.role) return { ok: false, error: "noSelf" };
     // กันไม่ให้ผู้ดูแลสูงสุดคนสุดท้ายหรือตัวเองเสียสิทธิ์เต็มโดยไม่ตั้งใจ
     if (cur.role === "super" && role !== "super" && (id === me.id || (await activeSupers(id)) === 0)) return { ok: false, error: id === me.id ? "noSelf" : "lastSuper" };
-    await mutate((db) => {
-      const u = db.users.find((x) => x.id === id)!;
+    // ตรวจบทบาทซ้ำในล็อก เผื่อมีคนเปลี่ยนบทบาทของบัญชีนี้ไประหว่างนั้น
+    const result = await mutate((db) => {
+      const u = db.users.find((x) => x.id === id);
+      if (!u) return "gone" as const;
+      if (touchesSuper(me, u.role)) return "superOnly" as const;
+      if (id === me.id && role !== u.role) return "noSelf" as const;
       const ini = initials(name);
       // บันทึกประวัติเฉพาะตอนที่มีการเปลี่ยนจริง
-      if (u.name.th !== name || u.email !== email || u.role !== role) logActivity(db, me.id, { th: "แก้ข้อมูลผู้ดูแล", en: "edited admin" }, { th: name, en: name });
-      Object.assign(u, { name: { th: name, en: name }, ini: { th: ini, en: ini }, email, role });
+      if (u.name !== name || u.email !== email || u.role !== role) logActivity(db, me.id, { th: "แก้ข้อมูลผู้ดูแล", en: "edited admin" }, name);
+      Object.assign(u, { name, ini, email, role });
+      return "ok" as const;
     });
+    if (result === "gone") return { ok: false };
+    if (result !== "ok") return { ok: false, error: result };
     revalidatePath("/admin", "layout");
     return { ok: true };
   }
@@ -62,10 +78,10 @@ export async function saveUser(input: UserInput): Promise<UserResult> {
   await mutate((db) => {
     const ini = initials(name);
     db.users.push({
-      id: nextId(db.users), name: { th: name, en: name }, ini: { th: ini, en: ini }, email, role,
+      id: newId(db, "user"), name, ini, email, role,
       status: "invited", lastActive: null, passwordHash: null, inviteHash: inv.hash, inviteExpires: inv.expires,
     });
-    logActivity(db, me.id, { th: "เพิ่มผู้ดูแล", en: "added admin" }, { th: name, en: name });
+    logActivity(db, me.id, { th: "เพิ่มผู้ดูแล", en: "added admin" }, name);
   });
   revalidatePath("/admin", "layout");
   return { ok: true, ...(await inviteLink(inv.token)) };
@@ -77,11 +93,13 @@ export async function resendInvite(id: number): Promise<UserResult> {
   const u = await mutate((db) => {
     const u = db.users.find((x) => x.id === Number(id));
     if (!u || u.status !== "invited") return null;
+    if (touchesSuper(me, u.role)) return "superOnly" as const;
     Object.assign(u, { inviteHash: inv.hash, inviteExpires: inv.expires });
     logActivity(db, me.id, { th: "ส่งคำเชิญอีกครั้ง", en: "resent invite" }, u.name);
-    return { name: u.name.th, email: u.email };
+    return { name: u.name, email: u.email };
   });
   if (!u) return { ok: false };
+  if (u === "superOnly") return { ok: false, error: u };
   return { ok: true, ...(await inviteLink(inv.token)) };
 }
 
@@ -90,6 +108,7 @@ export async function setUserStatus(id: number, status: "active" | "suspended"):
   if (Number(id) === me.id) return { ok: false, error: "noSelf" };
   const u = (await readDb()).users.find((x) => x.id === Number(id));
   if (!u || u.status === "invited") return { ok: false };
+  if (touchesSuper(me, u.role)) return { ok: false, error: "superOnly" };
   if (status === "suspended" && u.role === "super" && (await activeSupers(u.id)) === 0) return { ok: false, error: "lastSuper" };
   await mutate((db) => {
     db.users.find((x) => x.id === u.id)!.status = status;
@@ -105,18 +124,23 @@ export async function deleteUser(id: number): Promise<UserResult> {
   if (Number(id) === me.id) return { ok: false, error: "noSelf" };
   const u = (await readDb()).users.find((x) => x.id === Number(id));
   if (!u) return { ok: false };
+  if (touchesSuper(me, u.role)) return { ok: false, error: "superOnly" };
   if (u.role === "super" && (await activeSupers(u.id)) === 0) return { ok: false, error: "lastSuper" };
   await mutate((db) => {
     db.users = db.users.filter((x) => x.id !== u.id);
     logActivity(db, me.id, { th: "ลบผู้ดูแล", en: "deleted admin" }, u.name);
   });
+  // รูปโปรไฟล์ของผู้ใช้ที่ถูกลบ ลบทิ้งด้วยถ้าไม่มีที่ไหนใช้แล้ว
+  if (u.avatar) await deleteUnused([u.avatar]);
   revalidatePath("/admin", "layout");
   return { ok: true };
 }
 
-/** บันทึกตารางสิทธิ์ ผู้ดูแลสูงสุดมีสิทธิ์ครบทุกอย่างเสมอ */
-export async function savePerms(perms: Perms): Promise<{ ok: true }> {
+/** บันทึกตารางสิทธิ์ ผู้ดูแลสูงสุดมีสิทธิ์ครบทุกอย่างเสมอ
+ * แก้ได้เฉพาะผู้ดูแลสูงสุด เพราะผู้ที่แก้สิทธิ์ได้จะให้สิทธิ์ทุกอย่างกับบทบาทตัวเองได้ */
+export async function savePerms(perms: Perms): Promise<{ ok: true } | { ok: false; error: "superOnly" }> {
   const me = await assertCan("users", "edit");
+  if (me.role !== "super") return { ok: false, error: "superOnly" };
   const clean = structuredClone(DEFAULT_PERMS);
   for (const r of ROLES) {
     if (r === "super") continue;

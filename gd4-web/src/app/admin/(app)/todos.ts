@@ -4,31 +4,29 @@
  */
 import type { AIconName } from "@/admin/AIcon";
 import { relDate, type AdminDict } from "@/admin/i18n";
+import { TYPES, type Field } from "@/admin/sectionSchema";
 import { realImg } from "@/components/Media";
-import { CATALOG_HELP, CONTACT_PATHS, FAQ_HELP, PAGES, SETTINGS } from "@/content/site";
 import { can, type CurrentUser } from "@/server/auth";
 import type { DB } from "@/server/types";
-import type { Locale } from "@/types/site";
+import type { LText, Locale, Section } from "@/types/site";
 
 export type Todo = { icon: AIconName; red?: boolean; title: string; desc: string; href: string };
 
-/** เก็บข้อความภาษาไทยทุกช่องในส่วนนั้น */
-function thTexts(v: unknown, out: string[] = []): string[] {
-  if (!v || typeof v !== "object") return out;
-  if ("th" in v && "en" in v && typeof (v as { th: unknown }).th === "string") {
-    out.push((v as { th: string }).th.trim());
-    return out;
-  }
-  for (const x of Object.values(v)) thTexts(x, out);
-  return out;
-}
+const blank = (v?: LText) => !v?.th?.trim() || !v?.en?.trim();
 
-// ข้อความตัวอย่างจากข้อมูลตั้งต้น ใช้เฉพาะประโยคยาว เพื่อไม่ให้หัวข้อทั่วไปเช่นคำถามที่พบบ่อยถูกนับ
-// ไม่นับข้อความประกอบที่ใช้ได้จริง เช่นกล่องปรึกษา ข้อความใต้คำถามที่พบบ่อย และการ์ดเลือกเรื่อง
-const READY = new Set(thTexts([FAQ_HELP, CATALOG_HELP, CONTACT_PATHS()]));
-const SAMPLE = new Set(
-  PAGES.flatMap((p) => p.sections.filter((s) => s.type !== "categories").flatMap((s) => thTexts(s))).filter((x) => x.length >= 20 && !READY.has(x)),
-);
+/** ช่องที่ต้องกรอกช่องนี้ยังว่างหรือไม่ ช่องสองภาษาต้องมีครบทั้งไทยและอังกฤษ */
+const missing = (o: Record<string, unknown>, f: Field) => (f.i18n ? blank(o[f.key] as LText | undefined) : !String(o[f.key] ?? "").trim());
+
+/** ส่วนนี้ยังกรอกไม่ครบหรือไม่ ใช้ช่องที่ต้องกรอกตามที่ตั้งไว้ในหน้าแก้ไข */
+function unfinished(s: Section): boolean {
+  const def = TYPES[s.type];
+  const o = s as unknown as Record<string, unknown>;
+  if (def.fields.some((f) => f.req && missing(o, f))) return true;
+  const req = def.item?.fields.filter((f) => f.req) ?? [];
+  if (!req.length) return false;
+  const items = ((o.items ?? []) as Record<string, unknown>[]).filter((x) => !x.hidden);
+  return !items.length || items.some((x) => req.some((f) => missing(x, f)));
+}
 
 export function getTodos(db: DB, user: CurrentUser, lang: Locale, t: AdminDict): Todo[] {
   const n = (s: string, v: number | string) => s.replace("{n}", String(v));
@@ -38,34 +36,28 @@ export function getTodos(db: DB, user: CurrentUser, lang: Locale, t: AdminDict):
   const push = (show: boolean, count: number, todo: Todo) => list.push({ ...todo, show, count });
 
   // หน้าเว็บ
-  const samplePages = db.pages.filter((p) => p.sections.some((s) => !s.hidden && thTexts(s).some((x) => SAMPLE.has(x))));
-  push(can(user, "content"), samplePages.length, {
-    icon: "alert", red: true, title: n(t.dash.tSample, samplePages.length), desc: samplePages.map((p) => p.title[lang]).join(" · "),
-    href: `/admin/content?page=${samplePages[0]?.id ?? "home"}`,
+  const todoPages = db.pages.filter((p) => p.sections.some((s) => !s.hidden && unfinished(s)));
+  push(can(user, "content"), todoPages.length, {
+    icon: "alert", red: true, title: n(t.dash.tUnfinished, todoPages.length), desc: todoPages.map((p) => p.title[lang]).join(" · "),
+    href: `/admin/content?page=${todoPages[0]?.id ?? "home"}`,
   });
-  const phone = db.settings.contact.phone.trim();
-  push(can(user, "content"), !phone || phone === SETTINGS.contact.phone ? 1 : 0, {
-    icon: "phone", red: true, title: t.dash.tPhone, desc: t.dash.tPhoneD.replace("{phone}", phone || "—"), href: "/admin/content?page=contact",
+  push(can(user, "content"), db.settings.contact.phone.trim() ? 0 : 1, {
+    icon: "phone", red: true, title: t.dash.tPhone, desc: t.dash.tPhoneD, href: "/admin/content?page=contact",
   });
   const draft = db.draft;
   push(can(user, "content", "publish"), draft ? 1 : 0, {
     icon: "page", title: t.dash.tPageDraft,
-    desc: draft ? t.dash.tPageDraftD.replace("{who}", db.users.find((u) => u.id === draft.userId)?.name[lang] ?? "—").replace("{when}", relDate(draft.when, lang)) : "",
+    desc: draft ? t.dash.tPageDraftD.replace("{who}", db.users.find((u) => u.id === draft.userId)?.name ?? "—").replace("{when}", relDate(draft.when, lang)) : "",
     href: "/admin/content",
   });
   const hero = db.pages.find((p) => p.id === "home")?.sections.find((s) => s.type === "hero");
   const heroNoImg = hero && hero.type === "hero" ? hero.items.filter((x) => !realImg(x.img)).length : 0;
   push(can(user, "content"), heroNoImg, { icon: "image", red: true, title: n(t.dash.tHero, heroNoImg), desc: t.dash.tHeroD, href: "/admin/content?page=home" });
 
-  // ชื่อเว็บใน Google ว่าง ยังเป็นข้อความตั้งต้น หรือไม่มีชื่อเว็บอยู่ในชื่อ เช่นพิมพ์ชื่อเว็บผิด
+  // ชื่อหรือคำอธิบายใน Google ยังว่าง หรือไม่มีชื่อเว็บอยู่ในชื่อ เช่นพิมพ์ชื่อเว็บผิด
   const seo = db.settings.seo;
   const seoBad = (["th", "en"] as const).some(
-    (l) =>
-      !seo.title[l].trim() ||
-      !seo.description[l].trim() ||
-      seo.title[l] === SETTINGS.seo.title[l] ||
-      seo.description[l] === SETTINGS.seo.description[l] ||
-      !seo.title[l].includes(db.settings.siteName[l].trim()),
+    (l) => !seo.title[l].trim() || !seo.description[l].trim() || !seo.title[l].includes(db.settings.siteName[l].trim()),
   );
   push(can(user, "settings", "edit"), seoBad ? 1 : 0, { icon: "search", title: t.dash.tSeo, desc: t.dash.tSeoD, href: "/admin/settings?tab=seo" });
 
