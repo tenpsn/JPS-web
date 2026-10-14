@@ -1,5 +1,5 @@
 /**
- * ข้อความหน้าจอหลังบ้านภาษาไทยและอังกฤษ สร้างอัตโนมัติจากไฟล์ดีไซน์ GD4 Admin
+ * ข้อความหน้าจอหลังบ้านภาษาไทยและอังกฤษ สร้างอัตโนมัติจากไฟล์ดีไซน์หลังบ้าน
  * ห้ามแก้ไฟล์นี้เอง ถ้าจะเพิ่มหรือแก้ข้อความให้ทำใน i18n.ts
  */
 export const TT = {
@@ -155,8 +155,8 @@ export const TT = {
    "en": "Admin sign in"
   },
   "sub": {
-   "th": "จัดการสินค้าและเนื้อหาเว็บไซต์ GD4 Medical",
-   "en": "Manage GD4 Medical products and website content"
+   "th": "จัดการสินค้าและเนื้อหาเว็บไซต์ เจ พี เอส ไอเมด",
+   "en": "Manage JPS iMed products and website content"
   },
   "email": {
    "th": "อีเมล",
@@ -211,8 +211,8 @@ export const TT = {
    "en": "We sent a password reset link to"
   },
   "panelEyebrow": {
-   "th": "GD4 Medical Admin",
-   "en": "GD4 Medical Admin"
+   "th": "เจ พี เอส ไอเมด Admin",
+   "en": "JPS iMed Admin"
   },
   "panelTitle": {
    "th": "ระบบจัดการเว็บไซต์",

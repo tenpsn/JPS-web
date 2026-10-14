@@ -43,21 +43,21 @@ const faqItems = items([
 ]);
 
 export const SETTINGS: SiteSettings = {
-  siteName: L("GD4 Medical", "GD4 Medical"),
+  siteName: L("เจ พี เอส ไอเมด", "JPS iMed"),
   logo: null,
   logoDark: null,
   favicon: null,
   seo: {
-    title: L("GD4 Medical · ผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร", "GD4 Medical · End-to-end medical equipment distributor"),
+    title: L("เจ พี เอส ไอเมด · ผู้จัดจำหน่ายเครื่องจักรอุตสาหกรรมยาครบวงจร", "JPS iMed · End-to-end pharmaceutical machinery supplier"),
     description: L(
-      "จัดหา ติดตั้ง และดูแลเครื่องมือแพทย์ให้โรงพยาบาลและคลินิกทั่วประเทศ บริการหลังการขาย 24 ชั่วโมง",
-      "Sourcing, installation and lifetime support of medical equipment for hospitals and clinics nationwide, with 24-hour service.",
+      "จัดหา ติดตั้ง และดูแลเครื่องจักรผลิตและบรรจุยาให้โรงงานทั่วประเทศ ทั้งเครื่องตอกเม็ด บรรจุแคปซูล แผงบลิสเตอร์ และไลน์บรรจุอัตโนมัติ บริการหลังการขาย 24 ชั่วโมง",
+      "Sourcing, installation and lifetime support of tablet presses, capsule fillers, blister packers and automated lines for pharmaceutical plants nationwide, with 24-hour service.",
     ),
   },
   contact: {
-    address: L("99/9 อาคารจีดีโฟร์ ถนนพระราม 9 แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพฯ 10310", "99/9 GD4 Building, Rama 9 Road, Huai Khwang, Bangkok 10310"),
+    address: L("18/299 ถนน สวัสดิการ แขวงหนองแขม เขตหนองแขม กรุงเทพมหานคร 10160", "18/299 Sawatdikarn Road, Nong Khaem Subdistrict, Nong Khaem District, Bangkok 10160"),
     phone: "02-123-4567",
-    email: "info@gdfourmedical.com",
+    email: "",
     hours: L("จันทร์–ศุกร์ 08:30–17:30 น. · เสาร์ 08:30–12:00 น.", "Mon–Fri 08:30–17:30 · Sat 08:30–12:00"),
     mapEmbed: "",
   },
@@ -99,12 +99,7 @@ export const SETTINGS: SiteSettings = {
     },
     { id: "m-contact", label: L("ติดต่อเรา", "Contact"), url: "/contact" },
   ],
-  socials: [
-    { id: "so1", platform: "facebook", url: "https://facebook.com/gdfourmedical" },
-    { id: "so2", platform: "line", url: "https://line.me/R/ti/p/@gd4medical" },
-    { id: "so3", platform: "youtube", url: "https://youtube.com/@gd4medical" },
-    { id: "so4", platform: "instagram", url: "https://instagram.com/gdfourmedical" },
-  ],
+  socials: [],
   productTiles: [
     { id: "pt1", icon: "factory", label: L("ติดตั้งถึงโรงงาน", "On-site installation") },
     { id: "pt2", icon: "users", label: L("อบรมการใช้งาน", "Operator training") },
@@ -112,7 +107,7 @@ export const SETTINGS: SiteSettings = {
   ],
   footer: {
     body: L("ผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร จัดหา ติดตั้ง และดูแลตลอดอายุการใช้งาน", "End-to-end medical equipment distributor: sourcing, installation and lifetime support."),
-    copyright: L("© 2569 บริษัท จีดีโฟร์ เมดิคอล จำกัด สงวนลิขสิทธิ์", "© 2026 GD4 Medical Co., Ltd. All rights reserved."),
+    copyright: L("© 2569 บริษัท เจ พี เอส ไอเมด จำกัด สงวนลิขสิทธิ์", "© 2026 JPS iMed Co., Ltd. All rights reserved."),
   },
 };
 
@@ -141,7 +136,7 @@ export const PAGES: Page[] = [
         id: id("s"),
         type: "cards",
         bg: "gray",
-        heading: L("ทำไมโรงพยาบาลเลือก GD4", "Why hospitals choose GD4"),
+        heading: L("ทำไมโรงพยาบาลเลือกเจ พี เอส ไอเมด", "Why hospitals choose JPS iMed"),
         sub: L("ดูแลตั้งแต่การเลือกเครื่องไปจนถึงวันที่ต้องเปลี่ยนเครื่องใหม่", "From choosing equipment to replacing it years later"),
         items: items([
           { icon: "award" as const, title: L("สินค้ามาตรฐานสากล", "Internationally certified"), desc: L("ทุกรายการผ่านการรับรอง ISO 13485 และได้รับอนุญาตจาก อย.", "Every product is ISO 13485 certified and Thai FDA licensed.") },
@@ -155,7 +150,7 @@ export const PAGES: Page[] = [
         type: "stats",
         bg: "navy",
         style: "band",
-        heading: L("GD4 ในตัวเลข", "GD4 in numbers"),
+        heading: L("เจ พี เอส ไอเมด ในตัวเลข", "JPS iMed in numbers"),
         items: items([
           { value: L("2009", "2009"), label: L("ปีที่ก่อตั้งบริษัท", "Year founded") },
           { value: L("1,200+", "1,200+"), label: L("โรงพยาบาลและคลินิกที่ไว้วางใจ", "Hospitals and clinics served") },
@@ -186,15 +181,15 @@ export const PAGES: Page[] = [
         type: "pageHeader",
         bg: "gray",
         heading: L("เกี่ยวกับเรา", "About us"),
-        sub: L("GD4 Medical ก่อตั้งในปี 2552 เป็นผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร ดูแลตั้งแต่การจัดหา ติดตั้ง อบรม ไปจนถึงบริการหลังการขายตลอดอายุการใช้งาน", "Founded in 2009, GD4 Medical is an end-to-end medical equipment distributor covering sourcing, installation, training and after-sales service for the full life of each device."),
+        sub: L("เจ พี เอส ไอเมด ก่อตั้งในปี 2552 เป็นผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร ดูแลตั้งแต่การจัดหา ติดตั้ง อบรม ไปจนถึงบริการหลังการขายตลอดอายุการใช้งาน", "Founded in 2009, JPS iMed is an end-to-end medical equipment distributor covering sourcing, installation, training and after-sales service for the full life of each device."),
       },
       {
         id: id("s"),
         type: "textImage",
         bg: "white",
         anchor: "history",
-        heading: L("เกี่ยวกับ GD4 Medical", "About GD4 Medical"),
-        body: L("GD4 Medical ก่อตั้งในปี 2552 เป็นผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร ดูแลตั้งแต่การจัดหา ติดตั้ง อบรม ไปจนถึงบริการหลังการขายตลอดอายุการใช้งาน", "Founded in 2009, GD4 Medical is an end-to-end medical equipment distributor covering sourcing, installation, training and after-sales service for the full life of each device."),
+        heading: L("เกี่ยวกับเจ พี เอส ไอเมด", "About JPS iMed"),
+        body: L("เจ พี เอส ไอเมด ก่อตั้งในปี 2552 เป็นผู้จัดจำหน่ายเครื่องมือแพทย์ครบวงจร ดูแลตั้งแต่การจัดหา ติดตั้ง อบรม ไปจนถึงบริการหลังการขายตลอดอายุการใช้งาน", "Founded in 2009, JPS iMed is an end-to-end medical equipment distributor covering sourcing, installation, training and after-sales service for the full life of each device."),
         img: "placeholder",
        
         imgSide: "right",

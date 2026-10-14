@@ -46,34 +46,38 @@ export function Footer({ settings, lang }: { settings: SiteSettings; lang: Local
             <Icon name="phone" />
             {contact.phone}
           </a>
-          <a href={`mailto:${contact.email}`} className="flex w-fit items-center gap-2 text-footer-ink [overflow-wrap:anywhere] hover:text-white">
-            <Icon name="mail" />
-            {contact.email}
-          </a>
+          {contact.email && (
+            <a href={`mailto:${contact.email}`} className="flex w-fit items-center gap-2 text-footer-ink [overflow-wrap:anywhere] hover:text-white">
+              <Icon name="mail" />
+              {contact.email}
+            </a>
+          )}
         </div>
 
-        <div className="flex flex-col gap-3">
-          <strong className="text-[15px] text-white">{t.follow}</strong>
-          <div className="flex flex-wrap gap-2.5">
-            {settings.socials.map((s) => {
-              const name = socialName(s);
-              return (
-                <a
-                  key={s.id}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={name}
-                  aria-label={name}
-                  className="grid size-[42px] place-items-center overflow-hidden rounded-full text-[13px] font-bold text-white shadow-[0_0_0_1px_rgba(255,255,255,.18)] transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-[3px] hover:text-white"
-                  style={{ background: socialBg(s) }}
-                >
-                  <SocialGlyph social={s} size={19} />
-                </a>
-              );
-            })}
+        {settings.socials.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <strong className="text-[15px] text-white">{t.follow}</strong>
+            <div className="flex flex-wrap gap-2.5">
+              {settings.socials.map((s) => {
+                const name = socialName(s);
+                return (
+                  <a
+                    key={s.id}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={name}
+                    aria-label={name}
+                    className="grid size-[42px] place-items-center overflow-hidden rounded-full text-[13px] font-bold text-white shadow-[0_0_0_1px_rgba(255,255,255,.18)] transition-transform duration-[250ms] ease-[cubic-bezier(.34,1.56,.64,1)] hover:-translate-y-[3px] hover:text-white"
+                    style={{ background: socialBg(s) }}
+                  >
+                    <SocialGlyph social={s} size={19} />
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="mx-auto max-w-[1200px] border-t border-white/10 px-[var(--sec-px)] pb-[26px] pt-[18px] text-[13px]">
         {tx(settings.footer.copyright, lang)}

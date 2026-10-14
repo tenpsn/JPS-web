@@ -159,7 +159,7 @@ export function FieldInput({ f, o, lang, onChange, err, categories, onPickMedia,
                 type="button"
                 aria-pressed={lang === l}
                 title={uiLang === "th" ? `แก้ไขภาษา${l === "th" ? "ไทย" : "อังกฤษ"}` : `Edit ${l === "th" ? "Thai" : "English"}`}
-                onClick={() => window.dispatchEvent(new CustomEvent("gd4-edit-lang", { detail: l }))}
+                onClick={() => window.dispatchEvent(new CustomEvent("jps-edit-lang", { detail: l }))}
                 className={`cursor-pointer border-0 px-[5px] py-px ${lang === l ? "bg-blue-solid text-white" : "bg-surface text-ink3 hover:text-blue"}`}
               >
                 {l.toUpperCase()}

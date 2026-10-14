@@ -17,7 +17,7 @@ type SnapRow = { key: unknown[]; values?: unknown[]; json: string };
 type Snap = Map<string, Map<string, SnapRow>>;
 type Cache = { db: DB; rev: number; snap: Snap };
 
-const g = globalThis as unknown as { __gd4cache?: Cache; __gd4loading?: Promise<Cache>; __gd4ready?: Promise<void> };
+const g = globalThis as unknown as { __jpscache?: Cache; __jpsloading?: Promise<Cache>; __jpsready?: Promise<void> };
 
 /** แปลงข้อมูลทั้งหมดเป็นแถวของทุกตาราง พร้อมคีย์ที่ใช้เทียบกับครั้งก่อน
  * withValues เก็บค่าของแถวไว้ด้วย ใช้ตอนบันทึก */
@@ -96,21 +96,21 @@ async function init() {
 }
 
 function ready(): Promise<void> {
-  g.__gd4ready ??= init().catch((e) => {
-    g.__gd4ready = undefined;
+  g.__jpsready ??= init().catch((e) => {
+    g.__jpsready = undefined;
     throw e;
   });
-  return g.__gd4ready;
+  return g.__jpsready;
 }
 
 export async function readDb(): Promise<DB> {
   await ready();
   const rev = await getRev(pool());
-  if (g.__gd4cache?.rev !== rev) {
-    g.__gd4loading ??= tx(load, "isolation level repeatable read read only").finally(() => (g.__gd4loading = undefined));
-    g.__gd4cache = await g.__gd4loading;
+  if (g.__jpscache?.rev !== rev) {
+    g.__jpsloading ??= tx(load, "isolation level repeatable read read only").finally(() => (g.__jpsloading = undefined));
+    g.__jpscache = await g.__jpsloading;
   }
-  return g.__gd4cache.db;
+  return g.__jpscache.db;
 }
 
 /** อ่านข้อมูลล่าสุดและทำงานกับฐานข้อมูลในล็อกเดียวกับการบันทึก ห้ามแก้ข้อมูลที่ได้มา
@@ -120,8 +120,8 @@ export async function withLock<T>(fn: (db: DB, c: PoolClient) => Promise<T>): Pr
   return tx(async (c) => {
     await c.query("select pg_advisory_xact_lock($1)", [LOCK]);
     const rev = await getRev(c);
-    if (g.__gd4cache?.rev !== rev) g.__gd4cache = await load(c);
-    return fn(g.__gd4cache.db, c);
+    if (g.__jpscache?.rev !== rev) g.__jpscache = await load(c);
+    return fn(g.__jpscache.db, c);
   });
 }
 
@@ -132,8 +132,8 @@ export async function mutate<T>(fn: (db: DB) => T): Promise<T> {
     return await tx(async (c) => {
       await c.query("select pg_advisory_xact_lock($1)", [LOCK]);
       const rev = await getRev(c);
-      let cache = g.__gd4cache;
-      if (cache?.rev !== rev) cache = g.__gd4cache = await load(c);
+      let cache = g.__jpscache;
+      if (cache?.rev !== rev) cache = g.__jpscache = await load(c);
       const result = fn(cache.db);
       if (await persist(c, cache)) {
         cache.rev = rev + 1;
@@ -143,7 +143,7 @@ export async function mutate<T>(fn: (db: DB) => T): Promise<T> {
     });
   } catch (e) {
     // ข้อมูลในหน่วยความจำอาจถูกแก้ไปบางส่วนแล้ว จึงทิ้งไปและโหลดใหม่รอบหน้า
-    g.__gd4cache = undefined;
+    g.__jpscache = undefined;
     throw e;
   }
 }

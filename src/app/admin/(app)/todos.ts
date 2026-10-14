@@ -44,6 +44,19 @@ export function getTodos(db: DB, user: CurrentUser, lang: Locale, t: AdminDict):
   push(can(user, "content"), db.settings.contact.phone.trim() ? 0 : 1, {
     icon: "phone", red: true, title: t.dash.tPhone, desc: t.dash.tPhoneD, href: "/admin/content?page=contact",
   });
+  push(can(user, "content"), db.settings.contact.email.trim() ? 0 : 1, {
+    icon: "mail", red: true, title: t.dash.tEmail, desc: t.dash.tEmailD, href: "/admin/content?page=contact",
+  });
+  push(can(user, "content"), blank(db.settings.contact.address) ? 1 : 0, {
+    icon: "pin", red: true, title: t.dash.tAddress, desc: t.dash.tAddressD, href: "/admin/content?page=contact",
+  });
+
+  // ข้อมูลหลักของเว็บในหน้าตั้งค่าทั่วไป
+  const st = db.settings;
+  const canSet = can(user, "settings", "edit");
+  push(canSet, blank(st.siteName) ? 1 : 0, { icon: "globe", red: true, title: t.dash.tSiteName, desc: t.dash.tSiteNameD, href: "/admin/settings" });
+  push(canSet, realImg(st.logo) ? 0 : 1, { icon: "image", red: true, title: t.dash.tLogo, desc: t.dash.tLogoD, href: "/admin/settings" });
+  push(canSet, realImg(st.favicon) ? 0 : 1, { icon: "image", title: t.dash.tFavicon, desc: t.dash.tFaviconD, href: "/admin/settings" });
   const draft = db.draft;
   push(can(user, "content", "publish"), draft ? 1 : 0, {
     icon: "page", title: t.dash.tPageDraft,

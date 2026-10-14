@@ -8,7 +8,7 @@ import { initials } from "@/lib/initials";
 import { hashPassword } from "./password";
 import { AREAS, type Action, type Area, type DB, type Perms, type Role } from "./types";
 
-export const DEV_PASSWORD = "gd4-demo-2026";
+export const DEV_PASSWORD = "jps-demo-2026";
 
 const L = (th: string, en: string): LText => ({ th, en });
 const P = (view: number, edit: number, del: number, publish: number): Record<Action, boolean> => ({
@@ -77,11 +77,11 @@ function createDemoSeed(): DB {
     categories: structuredClone(CATEGORIES),
     products: PRODUCTS.map((p) => ({ ...structuredClone(p), updatedAt: UPDATED[p.sku]?.[0], updatedBy: UPDATED[p.sku]?.[1] })),
     users: [
-      user(1, "สมชาย วงศ์ใหญ่", "สว", "somchai@gdfourmedical.com", "super", "2026-10-02 11:30"),
-      user(2, "นภา ศรีสุข", "นศ", "napa@gdfourmedical.com", "editor", "2026-10-02 08:15"),
-      user(3, "ธนา รุ่งเรือง", "ธร", "thana@gdfourmedical.com", "products", "2026-09-29 14:22"),
-      user(4, "พิมพ์ชนก แก้วมณี", "พก", "pimchanok@gdfourmedical.com", "viewer", "2026-09-20 10:05", "suspended"),
-      user(5, "กฤต ศักดิ์ดี", "กศ", "krit@gdfourmedical.com", "editor", null, "invited"),
+      user(1, "สมชาย วงศ์ใหญ่", "สว", "somchai@example.com", "super", "2026-10-02 11:30"),
+      user(2, "นภา ศรีสุข", "นศ", "napa@example.com", "editor", "2026-10-02 08:15"),
+      user(3, "ธนา รุ่งเรือง", "ธร", "thana@example.com", "products", "2026-09-29 14:22"),
+      user(4, "พิมพ์ชนก แก้วมณี", "พก", "pimchanok@example.com", "viewer", "2026-09-20 10:05", "suspended"),
+      user(5, "กฤต ศักดิ์ดี", "กศ", "krit@example.com", "editor", null, "invited"),
     ],
     perms: structuredClone(DEFAULT_PERMS),
     activity: [

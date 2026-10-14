@@ -4,7 +4,7 @@
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const SESSION_COOKIE = "gd4_admin";
+export const SESSION_COOKIE = "jps_admin";
 export const SESSION_DAYS_REMEMBER = 30;
 export const SESSION_HOURS = 12;
 

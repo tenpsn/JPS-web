@@ -141,7 +141,7 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
         rev.current = r.rev;
         setSavedW(next);
         setDraft(true);
-        frame.current?.contentWindow?.postMessage({ type: "gd4-refresh" }, window.location.origin);
+        frame.current?.contentWindow?.postMessage({ type: "jps-refresh" }, window.location.origin);
         return true;
       } catch {
         toast("err", t.toast.fix);
@@ -164,11 +164,11 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return;
       // กดปุ่มเปลี่ยนภาษาบนหัวหน้าตัวอย่าง จะแก้ไขและแสดงภาษานั้น
-      if (e.data?.type === "gd4-lang" && (e.data.lang === "th" || e.data.lang === "en")) {
+      if (e.data?.type === "jps-lang" && (e.data.lang === "th" || e.data.lang === "en")) {
         setLang(e.data.lang);
         return;
       }
-      if (e.data?.type !== "gd4-select" || mode !== "content") return;
+      if (e.data?.type !== "jps-select" || mode !== "content") return;
       const id = String(e.data.id);
       setOpenSec(id);
       setView("edit");
@@ -178,13 +178,13 @@ export function Editor({ mode, initial, hasDraft, initialRev, categories, initia
     return () => window.removeEventListener("message", onMsg);
   }, [mode]);
   useEffect(() => {
-    if (openSec) frame.current?.contentWindow?.postMessage({ type: "gd4-focus", id: openSec }, window.location.origin);
+    if (openSec) frame.current?.contentWindow?.postMessage({ type: "jps-focus", id: openSec }, window.location.origin);
   }, [openSec]);
   // ป้ายภาษาข้างแต่ละช่อง ใช้สลับภาษาที่กำลังแก้ไข
   useEffect(() => {
     const onLang = (e: Event) => setLang((e as CustomEvent<Locale>).detail);
-    window.addEventListener("gd4-edit-lang", onLang);
-    return () => window.removeEventListener("gd4-edit-lang", onLang);
+    window.addEventListener("jps-edit-lang", onLang);
+    return () => window.removeEventListener("jps-edit-lang", onLang);
   }, []);
 
   /* ตัวช่วยแก้ไขข้อมูลที่กำลังทำงานอยู่ */

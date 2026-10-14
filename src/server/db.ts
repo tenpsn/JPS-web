@@ -55,26 +55,26 @@ async function setupSchema(): Promise<void> {
 }
 
 // ใช้การเชื่อมต่อชุดเดิมต่อไปเมื่อโค้ดโหลดใหม่ระหว่างพัฒนา
-const g = globalThis as unknown as { __gd4pool?: Pool; __gd4schema?: Promise<void> };
+const g = globalThis as unknown as { __jpspool?: Pool; __jpsschema?: Promise<void> };
 
 export function pool(): Pool {
-  if (!g.__gd4pool) {
+  if (!g.__jpspool) {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL is not set");
-    g.__gd4pool = new Pool({ connectionString: url, max: 10 });
+    g.__jpspool = new Pool({ connectionString: url, max: 10 });
     // การเชื่อมต่อที่รออยู่หลุดเอง เช่นฐานข้อมูลรีสตาร์ต ถ้าไม่รับไว้เซิร์ฟเวอร์เว็บจะดับทั้งตัว
-    g.__gd4pool.on("error", (e) => console.error("[db] idle connection error:", e.message));
+    g.__jpspool.on("error", (e) => console.error("[db] idle connection error:", e.message));
   }
-  return g.__gd4pool;
+  return g.__jpspool;
 }
 
 /** สร้างตารางที่ยังไม่มี ทำครั้งเดียวต่อการเปิดเซิร์ฟเวอร์ */
 export function ensureSchema(): Promise<void> {
-  g.__gd4schema ??= setupSchema().catch((e) => {
-      g.__gd4schema = undefined;
+  g.__jpsschema ??= setupSchema().catch((e) => {
+      g.__jpsschema = undefined;
       throw e;
     });
-  return g.__gd4schema;
+  return g.__jpsschema;
 }
 
 /** ทำงานในธุรกรรมเดียว ถ้ามีข้อผิดพลาดจะยกเลิกทั้งหมด */

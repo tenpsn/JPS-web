@@ -13,11 +13,12 @@ export function Contact({ s, lang, settings }: { s: ContactSection; lang: Locale
   const heading = tx(s.heading, lang);
   // เลือกเรื่องก่อน แล้วไปหาทีมที่ดูแลเรื่องนั้น
   const paths = s.items ?? [];
-  const lines: [IconName, string, React.ReactNode, string?][] = [
+  // ช่องที่ยังไม่ได้กรอกไม่ต้องแสดง
+  const lines = ([
     ["mail", t.c.email, c.email, `mailto:${c.email}`],
     ["pin", t.c.address, tx(c.address, lang)],
     ["clock", t.c.hours, tx(c.hours, lang)],
-  ];
+  ] satisfies [IconName, string, string, string?][]).filter(([, , v]) => v);
   const line = "flex gap-3.5 rounded-card border border-line bg-card p-[18px] text-ink";
 
   return (

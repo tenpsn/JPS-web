@@ -28,6 +28,16 @@ const EXTRA = {
     tUnfinished: L("หน้าที่ยังกรอกไม่ครบ {n} หน้า", "{n} pages are not finished"),
     tPhone: L("ยังไม่ได้ใส่เบอร์โทร", "No phone number yet"),
     tPhoneD: L("เบอร์นี้ขึ้นบนปุ่มโทรทุกหน้า ใส่ได้ที่ข้อมูลติดต่อ", "It shows on the call button on every page. Add it in Contact details"),
+    tEmail: L("ยังไม่ได้ใส่อีเมล", "No email address yet"),
+    tAddress: L("ยังไม่ได้ใส่ที่อยู่ให้ครบสองภาษา", "The address is missing in Thai or English"),
+    tAddressD: L("ที่อยู่ขึ้นท้ายเว็บและหน้าติดต่อเรา ใส่ได้ที่ข้อมูลติดต่อ", "It shows in the footer and on the Contact page. Add it in Contact details"),
+    tSiteName: L("ยังไม่ได้ใส่ชื่อเว็บให้ครบสองภาษา", "The site name is missing in Thai or English"),
+    tSiteNameD: L("ชื่อเว็บขึ้นบนแท็บเบราว์เซอร์และใน Google ใส่ได้ที่ตั้งค่าทั่วไป", "It shows on browser tabs and in Google. Add it in General settings"),
+    tLogo: L("ยังไม่ได้ใส่โลโก้", "No logo yet"),
+    tLogoD: L("โลโก้ขึ้นบนหัวเว็บทุกหน้า ใส่ได้ที่ตั้งค่าทั่วไป", "It shows in the header on every page. Add it in General settings"),
+    tFavicon: L("ยังไม่ได้ใส่ไอคอนเว็บ", "No site icon yet"),
+    tFaviconD: L("ไอคอนขึ้นบนแท็บเบราว์เซอร์ ใส่ได้ที่ตั้งค่าทั่วไป", "It shows on browser tabs. Add it in General settings"),
+    tEmailD: L("อีเมลนี้ขึ้นท้ายเว็บและหน้าติดต่อเรา ใส่ได้ที่ข้อมูลติดต่อ", "It shows in the footer and on the Contact page. Add it in Contact details"),
     tPageDraft: L("มีฉบับร่างหน้าเว็บที่ยังไม่เผยแพร่", "Unpublished page changes"),
     tPageDraftD: L("แก้ล่าสุดโดย {who} · {when}", "Last edited by {who} · {when}"),
     tSeo: L("SEO ทั้งเว็บยังไม่ถูกต้อง", "Site SEO needs attention"),
@@ -137,7 +147,7 @@ function resolve(o: unknown, lang: Locale): unknown {
 const cache: Partial<Record<Locale, AdminDict>> = {};
 export const getAdminDict = (lang: Locale): AdminDict => (cache[lang] ??= resolve(DICT, lang) as AdminDict);
 
-export const ADMIN_LANG_COOKIE = "gd4_admin_lang";
+export const ADMIN_LANG_COOKIE = "jps_admin_lang";
 
 const MTH = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 const MEN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

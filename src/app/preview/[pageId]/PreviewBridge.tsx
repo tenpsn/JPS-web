@@ -24,17 +24,17 @@ export function PreviewBridge({ theme, lang }: { theme: "light" | "dark"; lang: 
         e.preventDefault();
         e.stopPropagation();
         const l = el.closest<HTMLElement>("button[lang]")?.getAttribute("lang");
-        if (l === "th" || l === "en") window.parent.postMessage({ type: "gd4-lang", lang: l }, origin);
+        if (l === "th" || l === "en") window.parent.postMessage({ type: "jps-lang", lang: l }, origin);
         return;
       }
       const sec = el.closest<HTMLElement>("[data-sec-id]");
-      if (sec) window.parent.postMessage({ type: "gd4-select", id: sec.dataset.secId }, origin);
+      if (sec) window.parent.postMessage({ type: "jps-select", id: sec.dataset.secId }, origin);
     };
     const onSubmit = (e: Event) => e.preventDefault();
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== origin) return;
-      if (e.data?.type === "gd4-refresh") router.refresh();
-      if (e.data?.type === "gd4-focus") {
+      if (e.data?.type === "jps-refresh") router.refresh();
+      if (e.data?.type === "jps-focus") {
         const el = document.querySelector<HTMLElement>(`[data-sec-id="${CSS.escape(String(e.data.id))}"]`);
         if (el) {
           document.querySelectorAll("[data-sec-on]").forEach((x) => x.removeAttribute("data-sec-on"));
@@ -46,7 +46,7 @@ export function PreviewBridge({ theme, lang }: { theme: "light" | "dark"; lang: 
     document.addEventListener("click", onClick, true);
     document.addEventListener("submit", onSubmit, true);
     window.addEventListener("message", onMsg);
-    window.parent.postMessage({ type: "gd4-ready" }, origin);
+    window.parent.postMessage({ type: "jps-ready" }, origin);
     return () => {
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("submit", onSubmit, true);
